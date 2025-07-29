@@ -4,7 +4,10 @@
 
 from .base_scrapper import BusinessData, ReviewData, ServiceData, YandexMapsScraper
 from .navigation import YandexMapsNavigator
-from .selectors import selectors
+from .selectors import YandexMapsSelectors
+
+# Создаем экземпляр селекторов для использования
+selectors = YandexMapsSelectors()
 
 __all__ = [
     "YandexMapsScraper",
@@ -13,4 +16,5 @@ __all__ = [
     "ReviewData",
     "YandexMapsNavigator",
     "selectors",
+    "YandexMapsSelectors",
 ]

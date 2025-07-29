@@ -113,7 +113,7 @@ class YandexMapsScraper:
             # Получаем новый User-Agent
             user_agent = None
             if settings.ROTATE_USER_AGENT:
-                user_agent = user_agent_rotator.get_chrome_user_agent()
+                user_agent = user_agent_rotator.get_best_user_agent()
                 self.logger.debug(f"Используется User-Agent: {user_agent[:50]}...")
 
             # Создаем драйвер

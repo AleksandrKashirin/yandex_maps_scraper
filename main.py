@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from config.settings import settings
 from core.logger import get_logger
-from enterprise_data_extractor import EnterpriseDataExtractor, extract_from_file
+from enterprise_data_extractor import EnterpriseDataExtractor
 
 
 def setup_directories():

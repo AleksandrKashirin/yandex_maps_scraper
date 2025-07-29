@@ -2,7 +2,7 @@
 CSS и XPath селекторы для извлечения данных с Яндекс.Карт
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List
 
 
@@ -14,7 +14,9 @@ class SelectorConfig:
     xpath: str = ""
     multiple: bool = False  # Если True, ищем множественные элементы
     attribute: str = ""  # Атрибут для извлечения (href, text и т.д.)
-    fallback_selectors: List[str] = None  # Альтернативные селекторы
+    fallback_selectors: List[str] = field(
+        default_factory=list
+    )  # Альтернативные селекторы
 
 
 class YandexMapsSelectors:
