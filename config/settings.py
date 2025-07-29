@@ -53,7 +53,7 @@ class Settings:
     ROTATE_USER_AGENT: bool = os.getenv("ROTATE_USER_AGENT", "True").lower() == "true"
 
     # Настройки Chrome
-    HEADLESS: bool = os.getenv("HEADLESS", "True").lower() == "true"
+    HEADLESS: bool = os.getenv("HEADLESS", "False").lower() == "false"
     WINDOW_SIZE: str = os.getenv("WINDOW_SIZE", "1920,1080")
 
     # Настройки вывода

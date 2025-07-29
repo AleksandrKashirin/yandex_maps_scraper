@@ -81,6 +81,9 @@ class YandexMapsNavigator:
         Returns:
             WebElement или None если элемент не найден
         """
+
+        self.logger.info(f"Поиск элемента с CSS: {config.css}, XPath: {config.xpath}")
+
         search_context = parent_element if parent_element else self.driver
 
         # Список всех селекторов для попытки

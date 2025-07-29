@@ -199,6 +199,11 @@ class YandexMapsScraper:
             self.navigator.simulate_human_behavior()
 
             self.logger.info("Страница успешно загружена")
+
+            # В конце метода load_page, перед return True добавьте:
+            print(f"[DEBUG] Заголовок страницы: {self.driver.title}")
+            print(f"[DEBUG] URL страницы: {self.driver.current_url}")
+
             return True
 
         except Exception as e:
