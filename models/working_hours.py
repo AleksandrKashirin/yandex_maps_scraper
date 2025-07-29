@@ -4,7 +4,7 @@
 
 import re
 from datetime import datetime, time
-from typing import Dict, List, Optional, Tuple
+from typing import ClassVar, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -22,8 +22,8 @@ class WorkingHours(BaseModel):
         None, max_length=500, description="Особые условия работы"
     )
 
-    # Стандартные дни недели
-    WEEKDAYS = {
+    # Стандартные дни недели - помечаем как ClassVar
+    WEEKDAYS: ClassVar[Dict[str, str]] = {
         "monday": "понедельник",
         "tuesday": "вторник",
         "wednesday": "среда",
@@ -33,8 +33,8 @@ class WorkingHours(BaseModel):
         "sunday": "воскресенье",
     }
 
-    # Альтернативные названия дней недели
-    WEEKDAY_ALIASES = {
+    # Альтернативные названия дней недели - помечаем как ClassVar
+    WEEKDAY_ALIASES: ClassVar[Dict[str, str]] = {
         "пн": "monday",
         "понедельник": "monday",
         "пон": "monday",

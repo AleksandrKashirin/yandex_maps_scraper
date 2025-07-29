@@ -178,7 +178,10 @@ class ChromeConfig:
             service = Service(custom_path)
         else:
             # Автоматическая загрузка и установка ChromeDriver
-            service = Service(ChromeDriverManager().install())
+            driver_path = ChromeDriverManager().install()
+            if driver_path.endswith('THIRD_PARTY_NOTICES.chromedriver'):
+                driver_path = driver_path.replace('THIRD_PARTY_NOTICES.chromedriver', 'chromedriver.exe')
+            service = Service(driver_path)
 
         # Настройки сервиса для стабильности
         service.creation_flags = 0x08000000  # CREATE_NO_WINDOW на Windows
