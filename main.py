@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """
-Основной скрипт для запуска системы скрапинга Яндекс.Карт
+Главный скрипт для запуска системы извлечения данных с Яндекс.Карт
+Обновленная версия с использованием EnterpriseDataExtractor
 """
+
 import argparse
 import json
 import os
 import sys
-import time
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 # Добавляем корневую директорию в Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from config.settings import settings
-from core.logger import get_logger, scraping_metrics
-from scrapper import BusinessData, YandexMapsScraper
+from core.logger import get_logger
+from enterprise_data_extractor import EnterpriseDataExtractor, extract_from_file
 
 
 def setup_directories():
@@ -26,178 +27,131 @@ def setup_directories():
         directory.mkdir(exist_ok=True)
 
 
-def save_results(
-    data: BusinessData, output_format: str = "json", output_path: str = None
-) -> str:
-    """
-    Сохранение результатов скрапинга
+def print_extraction_summary(result):
+    """Красивый вывод результатов извлечения"""
+    print("\n" + "=" * 60)
+    print("📊 РЕЗУЛЬТАТЫ ИЗВЛЕЧЕНИЯ")
+    print("=" * 60)
 
-    Args:
-        data: Данные для сохранения
-        output_format: Формат вывода (json, csv)
-        output_path: Путь для сохранения
+    if hasattr(result, "get_summary"):  # Batch result
+        summary = result.get_summary()
 
-    Returns:
-        str: Путь к сохраненному файлу
-    """
-    if output_path is None:
-        output_path = settings.OUTPUT_PATH
+        print(f"🎯 Общая статистика:")
+        print(f"   • Всего URL: {summary['total_urls']}")
+        print(f"   • Успешно: {summary['successful']} ({summary['success_rate']:.1f}%)")
+        print(f"   • Неудачно: {summary['failed']}")
+        print(f"   • Время обработки: {summary['processing_time']:.2f}s")
+        print(f"   • Среднее время на URL: {summary['avg_time_per_url']:.2f}s")
 
-    output_dir = Path(output_path)
-    output_dir.mkdir(exist_ok=True)
+        if result.export_paths:
+            print(f"\n📁 Экспортированные файлы:")
+            for format_type, paths in result.export_paths.items():
+                if isinstance(paths, list):
+                    print(f"   • {format_type}: {len(paths)} файлов")
+                    for path in paths[:3]:  # Показываем первые 3
+                        print(f"     - {path}")
+                    if len(paths) > 3:
+                        print(f"     ... и еще {len(paths) - 3} файлов")
+                else:
+                    print(f"   • {format_type}: {paths}")
 
-    # Генерируем имя файла на основе названия предприятия и времени
-    safe_name = "".join(
-        c for c in data.name if c.isalnum() or c in (" ", "-", "_")
-    ).rstrip()
-    safe_name = safe_name.replace(" ", "_")[:50]  # Ограничиваем длину
+        # Показываем ошибки
+        if result.failed_extractions:
+            print(f"\n❌ Ошибки:")
+            for failure in result.failed_extractions[:5]:  # Показываем первые 5
+                print(f"   • {failure['url']}: {failure['error']}")
+            if len(result.failed_extractions) > 5:
+                print(f"   ... и еще {len(result.failed_extractions) - 5} ошибок")
 
-    timestamp = data.scraping_date.strftime("%Y%m%d_%H%M%S")
-    filename = f"{safe_name}_{timestamp}"
+    else:  # Single result
+        if result["success"]:
+            print(f"✅ Извлечение выполнено успешно!")
+            print(f"⏱️  Время обработки: {result['processing_time']:.2f}s")
 
-    if output_format.lower() == "json":
-        filepath = output_dir / f"{filename}.json"
+            # Информация о предприятии
+            data = result.get("data", {})
+            if data:
+                print(f"\n🏢 Информация о предприятии:")
+                print(f"   • Название: {data.get('name', 'Не указано')}")
+                print(f"   • Категория: {data.get('category', 'Не указано')}")
+                print(f"   • Адрес: {data.get('address', 'Не указано')}")
+                print(f"   • Рейтинг: {data.get('rating', 'Не указано')}")
+                print(
+                    f"   • Количество отзывов: {data.get('reviews_count', 'Не указано')}"
+                )
+                print(f"   • Услуг извлечено: {len(data.get('services', []))}")
+                print(f"   • Отзывов извлечено: {len(data.get('reviews', []))}")
 
-        # Конвертируем в JSON-совместимый формат
-        json_data = data.model_dump(mode="json")
+            # Пути к файлам
+            if result.get("export_paths"):
+                print(f"\n📁 Файлы результатов:")
+                for format_type, path in result["export_paths"].items():
+                    if not format_type.endswith("_error"):
+                        print(f"   • {format_type.upper()}: {path}")
 
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(json_data, f, ensure_ascii=False, indent=2)
+            # Качество данных
+            quality = result.get("data_quality", {})
+            if quality:
+                print(f"\n📈 Качество данных:")
+                print(f"   • Полнота: {quality.get('completeness', 0):.0%}")
+                print(
+                    f"   • Контактная информация: {'✅' if quality.get('has_contact_info') else '❌'}"
+                )
+                print(f"   • Услуги: {'✅' if quality.get('has_services') else '❌'}")
+                print(f"   • Отзывы: {'✅' if quality.get('has_reviews') else '❌'}")
+                print(f"   • Рейтинг: {'✅' if quality.get('has_rating') else '❌'}")
+                print(
+                    f"   • Соц. сети: {'✅' if quality.get('has_social_networks') else '❌'}"
+                )
+        else:
+            print(f"❌ Ошибка извлечения: {result['error']}")
 
-    elif output_format.lower() == "csv":
-        import pandas as pd
-
-        filepath = output_dir / f"{filename}.csv"
-
-        # Создаем DataFrame с основными данными
-        basic_data = {
-            "name": data.name,
-            "category": data.category,
-            "rating": data.rating,
-            "reviews_count": data.reviews_count,
-            "address": data.address,
-            "phone": data.phone,
-            "website": data.website,
-            "services_count": len(data.services),
-            "reviews_extracted": len(data.reviews),
-            "scraping_date": data.scraping_date.isoformat(),
-        }
-
-        df = pd.DataFrame([basic_data])
-        df.to_csv(filepath, index=False, encoding="utf-8")
-
-    return str(filepath)
-
-
-def scrape_single_url(url: str, output_format: str = "json") -> Optional[str]:
-    """
-    Скрапинг одного URL
-
-    Args:
-        url: URL для скрапинга
-        output_format: Формат вывода
-
-    Returns:
-        str: Путь к файлу результата или None
-    """
-    logger = get_logger(__name__)
-
-    try:
-        with YandexMapsScraper() as scraper:
-            logger.info(f"Начинаем скрапинг: {url}")
-
-            result = scraper.scrape_business(url)
-
-            if result:
-                filepath = save_results(result, output_format)
-                logger.info(f"Результаты сохранены в: {filepath}")
-                return filepath
-            else:
-                logger.error("Не удалось извлечь данные")
-                return None
-
-    except Exception as e:
-        logger.error(f"Ошибка скрапинга: {e}")
-        return None
-
-
-def scrape_multiple_urls(
-    urls: List[str], output_format: str = "json", delay_between: float = None
-) -> List[str]:
-    """
-    Скрапинг нескольких URL
-
-    Args:
-        urls: Список URL для скрапинга
-        output_format: Формат вывода
-        delay_between: Задержка между запросами
-
-    Returns:
-        List[str]: Список путей к файлам результатов
-    """
-    logger = get_logger(__name__)
-    results = []
-
-    if delay_between is None:
-        delay_between = (settings.MIN_DELAY + settings.MAX_DELAY) / 2
-
-    logger.info(f"Начинаем скрапинг {len(urls)} URL")
-
-    for i, url in enumerate(urls, 1):
-        logger.info(f"Обрабатываем URL {i}/{len(urls)}: {url}")
-
-        try:
-            result_path = scrape_single_url(url, output_format)
-            if result_path:
-                results.append(result_path)
-
-            # Задержка между запросами (кроме последнего)
-            if i < len(urls):
-                logger.info(f"Пауза {delay_between}s перед следующим запросом")
-                time.sleep(delay_between)
-
-        except KeyboardInterrupt:
-            logger.warning("Прерывание пользователем")
-            break
-        except Exception as e:
-            logger.error(f"Ошибка обработки {url}: {e}")
-            continue
-
-    logger.info(f"Обработка завершена. Успешно: {len(results)}/{len(urls)}")
-    scraping_metrics.log_summary()
-
-    return results
+    print("=" * 60)
 
 
 def main():
-    """Главная функция"""
+    """Главная функция с улучшенным интерфейсом"""
     parser = argparse.ArgumentParser(
-        description="Система извлечения данных с Яндекс.Карт",
+        description="🗺️  Система извлечения данных с Яндекс.Карт",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Примеры использования:
+🚀 Примеры использования:
 
-  # Скрапинг одного предприятия
+  # Извлечение данных одного предприятия
   python main.py --url "https://yandex.com.ge/maps/-/CHXU6Fmb"
   
-  # Скрапинг из файла со списком URL
-  python main.py --file urls.txt --format csv
+  # Извлечение из файла со списком URL  
+  python main.py --file urls.txt --format json csv
   
-  # Настройка задержки между запросами
-  python main.py --file urls.txt --delay 10
+  # Настройка задержки и параллелизма
+  python main.py --file urls.txt --delay 10 --workers 1
+  
+  # Экспорт во все форматы
+  python main.py --url "https://yandex.com.ge/maps/-/CHXU6Fmb" --format json csv database
+  
+  # Валидация URL без извлечения
+  python main.py --validate-file urls.txt
+
+📋 Поддерживаемые форматы экспорта: json, csv, database
         """,
     )
 
+    # Основные параметры
     parser.add_argument("--url", type=str, help="URL страницы предприятия")
     parser.add_argument(
         "--file", type=str, help="Файл со списком URL (по одному на строку)"
     )
+
+    # Форматы экспорта
     parser.add_argument(
         "--format",
-        choices=["json", "csv"],
-        default="json",
-        help="Формат вывода (по умолчанию: json)",
+        nargs="+",
+        choices=["json", "csv", "database"],
+        default=["json"],
+        help="Форматы экспорта (можно указать несколько)",
     )
+
+    # Настройки обработки
     parser.add_argument(
         "--output", type=str, help="Директория для сохранения результатов"
     )
@@ -205,7 +159,25 @@ def main():
         "--delay", type=float, help="Задержка между запросами в секундах"
     )
     parser.add_argument(
+        "--workers", type=int, default=1, help="Количество параллельных потоков"
+    )
+
+    # Настройки контента
+    parser.add_argument(
+        "--no-services", action="store_true", help="Не извлекать услуги"
+    )
+    parser.add_argument("--no-reviews", action="store_true", help="Не извлекать отзывы")
+    parser.add_argument("--max-reviews", type=int, default=50, help="Максимум отзывов")
+
+    # Утилиты
+    parser.add_argument(
+        "--validate-file", type=str, help="Только валидировать URL в файле"
+    )
+    parser.add_argument(
         "--debug", action="store_true", help="Включить отладочный режим"
+    )
+    parser.add_argument(
+        "--stats", action="store_true", help="Показать только статистику без обработки"
     )
 
     args = parser.parse_args()
@@ -219,32 +191,87 @@ def main():
     setup_directories()
 
     logger = get_logger(__name__)
-    logger.info("Запуск системы скрапинга Яндекс.Карт")
+
+    print("🗺️  Система извлечения данных с Яндекс.Карт")
+    print("=" * 60)
 
     # Обновляем путь вывода если задан
     if args.output:
         settings.OUTPUT_PATH = args.output
 
+    # Создаем экстрактор
     try:
-        if args.url:
-            # Скрапинг одного URL
-            result = scrape_single_url(args.url, args.format)
-            if result:
-                print(f"✅ Результат сохранен: {result}")
-            else:
-                print("❌ Не удалось извлечь данные")
+        extractor_config = {}
+        extractor = EnterpriseDataExtractor(extractor_config)
+
+        # Показать статистику
+        if args.stats:
+            stats = extractor.get_session_statistics()
+            print("📊 Статистика текущей сессии:")
+            for key, value in stats.items():
+                if key != "session_start":
+                    print(f"   • {key}: {value}")
+            return
+
+        # Валидация файла
+        if args.validate_file:
+            if not Path(args.validate_file).exists():
+                print(f"❌ Файл не найден: {args.validate_file}")
                 sys.exit(1)
 
+            with open(args.validate_file, "r", encoding="utf-8") as f:
+                urls = [
+                    line.strip()
+                    for line in f
+                    if line.strip() and not line.startswith("#")
+                ]
+
+            print(f"🔍 Валидация {len(urls)} URL из файла {args.validate_file}")
+            validation_result = extractor.validate_urls(urls)
+
+            print(f"\n✅ Валидных URL: {validation_result['valid_count']}")
+            print(f"❌ Невалидных URL: {validation_result['invalid_count']}")
+
+            if validation_result["invalid"]:
+                print(f"\n❌ Невалидные URL:")
+                for url in validation_result["invalid"][:10]:  # Показываем первые 10
+                    print(f"   • {url}")
+                if len(validation_result["invalid"]) > 10:
+                    print(f"   ... и еще {len(validation_result['invalid']) - 10}")
+
+            return
+
+        # Извлечение одного URL
+        if args.url:
+            print(f"🎯 Извлечение данных из: {args.url}")
+
+            result = extractor.extract_single(
+                url=args.url,
+                export_formats=args.format,
+                output_dir=args.output,
+                include_services=not args.no_services,
+                include_reviews=not args.no_reviews,
+                max_reviews=args.max_reviews,
+            )
+
+            print_extraction_summary(result)
+
+            if not result["success"]:
+                sys.exit(1)
+
+        # Извлечение из файла
         elif args.file:
-            # Скрапинг из файла
-            urls_file = Path(args.file)
-            if not urls_file.exists():
+            if not Path(args.file).exists():
                 print(f"❌ Файл не найден: {args.file}")
                 sys.exit(1)
 
             # Читаем URL из файла
-            with open(urls_file, "r", encoding="utf-8") as f:
-                urls = [line.strip() for line in f if line.strip()]
+            with open(args.file, "r", encoding="utf-8") as f:
+                urls = [
+                    line.strip()
+                    for line in f
+                    if line.strip() and not line.startswith("#")
+                ]
 
             if not urls:
                 print(f"❌ В файле {args.file} не найдено валидных URL")
@@ -252,15 +279,32 @@ def main():
 
             print(f"📋 Найдено {len(urls)} URL для обработки")
 
-            results = scrape_multiple_urls(urls, args.format, args.delay)
+            # Валидируем URLs
+            validation = extractor.validate_urls(urls)
+            if validation["invalid_count"] > 0:
+                print(f"⚠️  Обнаружено {validation['invalid_count']} невалидных URL")
 
-            print(f"\n✅ Обработка завершена!")
-            print(f"📊 Успешно обработано: {len(results)}/{len(urls)}")
+            # Обрабатываем только валидные URLs
+            if validation["valid"]:
+                result = extractor.extract_batch(
+                    urls=validation["valid"],
+                    export_formats=args.format,
+                    output_dir=args.output,
+                    delay_between=args.delay,
+                    max_workers=args.workers,
+                )
 
-            if results:
-                print("\n📁 Файлы результатов:")
-                for result_path in results:
-                    print(f"  • {result_path}")
+                print_extraction_summary(result)
+
+                # Выводим финальную статистику сессии
+                print(f"\n📈 Итоговая статистика сессии:")
+                stats = extractor.get_session_statistics()
+                for key, value in stats.items():
+                    if key not in ["session_start", "total_processing_time"]:
+                        print(f"   • {key}: {value}")
+            else:
+                print("❌ Не найдено валидных URL для обработки")
+                sys.exit(1)
         else:
             print("❌ Необходимо указать --url или --file")
             parser.print_help()
@@ -272,6 +316,10 @@ def main():
     except Exception as e:
         logger.error(f"Критическая ошибка: {e}")
         print(f"❌ Критическая ошибка: {e}")
+        if args.debug:
+            import traceback
+
+            traceback.print_exc()
         sys.exit(1)
 
 
