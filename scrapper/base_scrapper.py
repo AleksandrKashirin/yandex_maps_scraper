@@ -204,122 +204,6 @@ class YandexMapsScraper:
             self.logger.error(f"Ошибка загрузки страницы: {e}")
             raise
 
-    def extract_basic_info(self) -> Dict[str, Any]:
-        """
-        Извлечение базовой информации о предприятии
-
-        Returns:
-            Dict: Словарь с базовой информацией
-        """
-        self.logger.info("Извлечение базовой информации")
-
-        data = {}
-
-        # Название
-        name_element = self.navigator.find_element_with_fallback(
-            selectors.BASIC_INFO["name"]
-        )
-        if name_element:
-            data["name"] = name_element.text.strip()
-            self.logger.debug(f"Название: {data['name']}")
-
-        # Категория
-        category_element = self.navigator.find_element_with_fallback(
-            selectors.BASIC_INFO["category"]
-        )
-        if category_element:
-            data["category"] = category_element.text.strip()
-            self.logger.debug(f"Категория: {data['category']}")
-
-        # Рейтинг
-        rating_element = self.navigator.find_element_with_fallback(
-            selectors.BASIC_INFO["rating"]
-        )
-        if rating_element:
-            rating_text = rating_element.text.strip()
-            # Извлекаем числовое значение рейтинга
-            rating_match = re.search(r"(\d+[\.,]\d+)", rating_text)
-            if rating_match:
-                data["rating"] = float(rating_match.group(1).replace(",", "."))
-                self.logger.debug(f"Рейтинг: {data['rating']}")
-
-        # Количество отзывов
-        reviews_count_element = self.navigator.find_element_with_fallback(
-            selectors.BASIC_INFO["reviews_count"]
-        )
-        if reviews_count_element:
-            reviews_text = reviews_count_element.text.strip()
-            # Извлекаем числовое значение
-            reviews_match = re.search(r"(\d+)", reviews_text)
-            if reviews_match:
-                data["reviews_count"] = int(reviews_match.group(1))
-                self.logger.debug(f"Количество отзывов: {data['reviews_count']}")
-
-        # Адрес
-        address_element = self.navigator.find_element_with_fallback(
-            selectors.BASIC_INFO["address"]
-        )
-        if address_element:
-            data["address"] = address_element.text.strip()
-            self.logger.debug(f"Адрес: {data['address']}")
-
-        # Телефон
-        phone_elements = self.navigator.find_element_with_fallback(
-            selectors.BASIC_INFO["phone"]
-        )
-        if phone_elements:
-            if isinstance(phone_elements, list):
-                # Берем первый телефон
-                data["phone"] = phone_elements[0].text.strip()
-            else:
-                data["phone"] = phone_elements.text.strip()
-            self.logger.debug(f"Телефон: {data['phone']}")
-
-        # Сайт
-        website_element = self.navigator.find_element_with_fallback(
-            selectors.BASIC_INFO["website"]
-        )
-        if website_element:
-            href = website_element.get_attribute("href")
-            if href:
-                data["website"] = href
-                self.logger.debug(f"Сайт: {data['website']}")
-
-        # Часы работы
-        working_hours_element = self.navigator.find_element_with_fallback(
-            selectors.BASIC_INFO["working_hours"]
-        )
-        if working_hours_element:
-            data["working_hours"] = {
-                "current_status": working_hours_element.text.strip()
-            }
-            self.logger.debug(
-                f"Статус работы: {data['working_hours']['current_status']}"
-            )
-
-        return data
-
-    def extract_social_networks(self) -> Dict[str, str]:
-        """
-        Извлечение ссылок на социальные сети
-
-        Returns:
-            Dict: Словарь с социальными сетями
-        """
-        self.logger.debug("Извлечение социальных сетей")
-
-        social_data = {}
-
-        for network, config in selectors.SOCIAL_NETWORKS.items():
-            element = self.navigator.find_element_with_fallback(config)
-            if element:
-                href = element.get_attribute("href")
-                if href:
-                    social_data[network] = href
-                    self.logger.debug(f"{network}: {href}")
-
-        return social_data
-
     def navigate_to_services_tab(self) -> bool:
         """
         Переход на вкладку услуг
@@ -337,94 +221,6 @@ class YandexMapsScraper:
             bool: True если переход успешен
         """
         return self.navigator.navigate_to_reviews_tab()
-
-    def extract_reviews(self, max_reviews: int = 50) -> List[Dict[str, Any]]:
-        """
-        Извлечение отзывов
-
-        Args:
-            max_reviews: Максимальное количество отзывов для извлечения
-
-        Returns:
-            List: Список отзывов
-        """
-        self.logger.info(f"Извлечение отзывов (макс. {max_reviews})")
-
-        reviews = []
-
-        # Загружаем дополнительные отзывы
-        self.navigator.load_more_content("reviews")
-
-        # Находим все отзывы
-        review_elements = self.navigator.find_element_with_fallback(
-            selectors.REVIEWS["review_items"]
-        )
-
-        if not review_elements:
-            self.logger.warning("Отзывы не найдены")
-            return reviews
-
-        if not isinstance(review_elements, list):
-            review_elements = [review_elements]
-
-        # Ограничиваем количество отзывов
-        review_elements = review_elements[:max_reviews]
-
-        for element in review_elements:
-            try:
-                review_data = {}
-
-                # Автор
-                author_element = self.navigator.find_element_with_fallback(
-                    selectors.REVIEWS["review_author"], element
-                )
-                if author_element:
-                    review_data["author"] = author_element.text.strip()
-
-                # Рейтинг
-                rating_element = self.navigator.find_element_with_fallback(
-                    selectors.REVIEWS["review_rating"], element
-                )
-                if rating_element:
-                    aria_label = rating_element.get_attribute("aria-label")
-                    if aria_label:
-                        # Извлекаем число из "Оценка X Из 5"
-                        rating_match = re.search(
-                            r"(?:Оценка|Rating) (\d+) (?:Из|Out of)",
-                            aria_label,
-                            re.IGNORECASE,
-                        )
-                        if rating_match:
-                            review_data["rating"] = int(rating_match.group(1))
-
-                # Дата
-                date_element = self.navigator.find_element_with_fallback(
-                    selectors.REVIEWS["review_date"], element
-                )
-                if date_element:
-                    review_data["date"] = date_element.text.strip()
-
-                # Текст отзыва
-                text_element = self.navigator.find_element_with_fallback(
-                    selectors.REVIEWS["review_text"], element
-                )
-                if text_element:
-                    review_data["text"] = text_element.text.strip()
-
-                # Ответ владельца - новая логика
-                response_text = self._extract_owner_response(element)
-                if response_text:
-                    review_data["response"] = response_text
-
-                if review_data.get("author"):
-                    reviews.append(review_data)
-
-            except Exception as e:
-                self.logger.warning(f"Ошибка обработки отзыва: {e}")
-                continue
-
-        self.logger.info(f"Извлечено {len(reviews)} отзывов")
-        return reviews
 
     def _extract_owner_response(self, review_element) -> Optional[str]:
         """
@@ -734,3 +530,261 @@ class YandexMapsScraper:
             f"⚡ Быстро извлечено {len(services)} услуг за {time.time() - time.time():.1f}s"
         )
         return services
+
+    def extract_basic_info(self) -> Dict[str, Any]:
+        """
+        Быстрое извлечение базовой информации через BeautifulSoup
+
+        Returns:
+            Dict: Словарь с базовой информацией
+        """
+        self.logger.info("Быстрое извлечение базовой информации")
+
+        # Получаем HTML страницы
+        page_html = self.driver.page_source
+
+        # Парсим через BeautifulSoup
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(page_html, "html.parser")
+
+        data = {}
+
+        # Название
+        name_elem = soup.find("a", class_="card-title-view__title-link")
+        if name_elem:
+            data["name"] = name_elem.get_text(strip=True)
+            self.logger.debug(f"Название: {data['name']}")
+
+        # Категория
+        category_elem = soup.find("a", class_="business-categories-view__category")
+        if category_elem:
+            data["category"] = category_elem.get_text(strip=True)
+            self.logger.debug(f"Категория: {data['category']}")
+
+        # Рейтинг
+        rating_elem = soup.find(
+            "span", class_="business-rating-badge-view__rating-text"
+        )
+        if rating_elem:
+            rating_text = rating_elem.get_text(strip=True)
+            rating_match = re.search(r"(\d+[\.,]\d+)", rating_text)
+            if rating_match:
+                data["rating"] = float(rating_match.group(1).replace(",", "."))
+                self.logger.debug(f"Рейтинг: {data['rating']}")
+
+        # Количество отзывов
+        reviews_elem = soup.find("div", class_="business-header-rating-view__text")
+        if reviews_elem:
+            reviews_text = reviews_elem.get_text(strip=True)
+            reviews_match = re.search(r"(\d+)", reviews_text)
+            if reviews_match:
+                data["reviews_count"] = int(reviews_match.group(1))
+                self.logger.debug(f"Количество отзывов: {data['reviews_count']}")
+
+        # Адрес
+        address_elem = soup.find("div", class_="business-contacts-view__address-link")
+        if address_elem:
+            data["address"] = address_elem.get_text(strip=True)
+            self.logger.debug(f"Адрес: {data['address']}")
+
+        # Телефон
+        phone_elem = soup.find("div", class_="card-phones-view__phone-number")
+        if phone_elem:
+            data["phone"] = phone_elem.get_text(strip=True)
+            self.logger.debug(f"Телефон: {data['phone']}")
+
+        # Сайт
+        website_elem = soup.find("a", class_="business-urls-view__link")
+        if website_elem:
+            href = website_elem.get("href")
+            if href:
+                data["website"] = href
+                self.logger.debug(f"Сайт: {data['website']}")
+
+        # Часы работы
+        working_elem = soup.find("div", class_="business-working-status-view")
+        if working_elem:
+            data["working_hours"] = {
+                "current_status": working_elem.get_text(strip=True)
+            }
+            self.logger.debug(
+                f"Статус работы: {data['working_hours']['current_status']}"
+            )
+
+        return data
+
+    def extract_reviews(self, max_reviews: int = -1) -> List[Dict[str, Any]]:
+        """
+        Быстрое извлечение отзывов через BeautifulSoup + Selenium для ответов
+        """
+        self.logger.info(f"Быстрое извлечение отзывов{'(без ограничений)' if max_reviews == -1 else f'(макс. {max_reviews})'}")
+        
+        reviews = []
+        
+        # 1. Переходим на вкладку отзывов через Selenium
+        if not self.navigate_to_reviews_tab():
+            self.logger.warning("Не удалось перейти на вкладку отзывов")
+            return reviews
+        
+        # Небольшая пауза для загрузки
+        time.sleep(3)
+        
+        # 2. Получаем HTML страницы
+        self.logger.info("Получение HTML страницы с отзывами...")
+        page_html = self.driver.page_source
+        
+        # 3. Парсим через BeautifulSoup
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(page_html, 'html.parser')
+        
+        # 4. Находим все отзывы - БОЛЕЕ ТОЧНЫЙ СЕЛЕКТОР
+        review_elements = soup.find_all('div', class_='business-review-view__info')
+        
+        if not review_elements:
+            self.logger.warning("Отзывы не найдены в HTML")
+            return reviews
+        
+        # Ограничиваем количество отзывов только если задано ограничение
+        if max_reviews > 0:
+            review_elements = review_elements[:max_reviews]
+        
+        total_reviews = len(review_elements)
+        
+        self.logger.info(f"Найдено {total_reviews} отзывов в HTML")
+        
+        # 5. Progress bar для отзывов
+        progress_step = max(1, total_reviews // 20)
+        
+        for i, element in enumerate(review_elements, 1):
+            try:
+                # Progress bar
+                if i % progress_step == 0 or i == total_reviews:
+                    percentage = (i / total_reviews) * 100
+                    filled = int(percentage // 5)
+                    bar = "█" * filled + "░" * (20 - filled)
+                    print(f"\r💬 Быстрая обработка отзывов: [{bar}] {percentage:.0f}% ({i}/{total_reviews}) | Найдено: {len(reviews)}", end="", flush=True)
+                
+                review_data = {}
+                
+                # Автор
+                author_elem = element.find('span', attrs={'itemprop': 'name'})
+                if author_elem:
+                    review_data["author"] = author_elem.get_text(strip=True)
+                
+                # Рейтинг из aria-label
+                rating_elem = element.find('div', class_='business-rating-badge-view__stars')
+                if rating_elem:
+                    aria_label = rating_elem.get('aria-label', '')
+                    rating_match = re.search(r"(?:Оценка|Rating) (\d+) (?:Из|Out of)", aria_label, re.IGNORECASE)
+                    if rating_match:
+                        review_data["rating"] = int(rating_match.group(1))
+                
+                # Дата - ИСПРАВЛЕННАЯ ВЕРСИЯ
+                date_elem = element.find('div', class_='business-review-view__date')
+                if date_elem:
+                    # Ищем span с текстом даты
+                    date_span = date_elem.find('span')
+                    if date_span:
+                        review_data["date"] = date_span.get_text(strip=True)
+                    # Fallback - ищем meta с datePublished
+                    elif date_elem.find('meta', attrs={'itemprop': 'datePublished'}):
+                        content = date_elem.find('meta')['content']
+                        try:
+                            from datetime import datetime
+                            dt = datetime.fromisoformat(content.replace('Z', '+00:00'))
+                            review_data["date"] = dt.strftime('%d %B')
+                        except:
+                            review_data["date"] = content
+                
+                # Текст отзыва
+                text_elem = element.find('span', class_='spoiler-view__text-container') or \
+                        element.find('div', class_='business-review-view__body')
+                if text_elem:
+                    review_data["text"] = text_elem.get_text(strip=True)
+                
+                # Ответ владельца - ГИБРИДНЫЙ ПОДХОД
+                # Сначала пробуем найти в HTML, если не найден - используем Selenium
+                response_elem = element.find('div', class_='business-review-comment-content__bubble')
+                if response_elem:
+                    review_data["response"] = response_elem.get_text(strip=True)
+                else:
+                    # Если ответ не виден, пробуем найти кнопку и кликнуть через Selenium
+                    response_button = element.find('div', class_='business-review-view__comment-expand')
+                    if response_button:
+                        # Используем Selenium для клика (медленнее, но надежнее)
+                        try:
+                            # Находим соответствующий элемент через Selenium
+                            selenium_elements = self.navigator.find_element_with_fallback(
+                                selectors.REVIEWS["review_items"]
+                            )
+                            if selenium_elements and isinstance(selenium_elements, list) and i <= len(selenium_elements):
+                                selenium_element = selenium_elements[i-1]
+                                response_text = self._extract_owner_response(selenium_element)
+                                if response_text:
+                                    review_data["response"] = response_text
+                        except:
+                            pass  # Если не получилось через Selenium, оставляем пустым
+                
+                # В конце цикла for перед добавлением отзыва:
+                if review_data.get("author") and len(review_data.get("author", "")) > 1:
+                    # Дополнительная проверка - отзыв должен иметь хотя бы автора и текст или рейтинг
+                    if review_data.get("text") or review_data.get("rating"):
+                        reviews.append(review_data)
+                    
+            except Exception as e:
+                self.logger.debug(f"Ошибка обработки отзыва #{i}: {e}")
+                continue
+        
+        # Завершаем progress bar
+        print()
+        self.logger.info(f"⚡ Быстро извлечено {len(reviews)} отзывов")
+        return reviews
+
+        # Завершаем progress bar
+        print()
+        self.logger.info(f"⚡ Быстро извлечено {len(reviews)} отзывов")
+        return reviews
+
+    def extract_social_networks(self) -> Dict[str, str]:
+        """
+        Быстрое извлечение ссылок на социальные сети через BeautifulSoup
+
+        Returns:
+            Dict: Словарь с социальными сетями
+        """
+        self.logger.debug("Быстрое извлечение социальных сетей")
+
+        # Получаем HTML если еще не получили
+        page_html = self.driver.page_source
+
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(page_html, "html.parser")
+
+        social_data = {}
+
+        # Ищем все ссылки на странице
+        all_links = soup.find_all("a", href=True)
+
+        for link in all_links:
+            href = link.get("href", "")
+
+            # Telegram
+            if ("t.me" in href or "telegram" in href) and "telegram" not in social_data:
+                social_data["telegram"] = href
+                self.logger.debug(f"telegram: {href}")
+
+            # WhatsApp
+            elif (
+                "wa.me" in href or "whatsapp" in href
+            ) and "whatsapp" not in social_data:
+                social_data["whatsapp"] = href
+                self.logger.debug(f"whatsapp: {href}")
+
+            # VK
+            elif "vk.com" in href and "vk" not in social_data:
+                social_data["vk"] = href
+                self.logger.debug(f"vk: {href}")
+
+        return social_data
