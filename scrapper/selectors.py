@@ -78,7 +78,7 @@ class YandexMapsSelectors:
     # Услуги и цены
     SERVICES = {
         "service_items": SelectorConfig(
-            css=".business-full-items-grouped-view__item",  # ИСПРАВЛЕНО
+            css=".business-full-items-grouped-view__item",
             xpath="//div[contains(@class, 'business-full-items-grouped-view__item')]",
             multiple=True,
         ),
@@ -87,7 +87,7 @@ class YandexMapsSelectors:
             css=".related-item-photo-view__title",
             xpath=".//div[contains(@class, 'related-item-photo-view__title')]",
             fallback_selectors=[
-                ".related-item-list-view__title"  # Для list-типа
+                ".//div[contains(@class, 'related-item-list-view__title')]"  # Добавляем .//
             ]
         ),
 
@@ -95,7 +95,7 @@ class YandexMapsSelectors:
             css=".related-product-view__price",
             xpath=".//span[contains(@class, 'related-product-view__price')]",
             fallback_selectors=[
-                ".related-item-list-view__price"  # Для list-типа
+                ".//div[contains(@class, 'related-item-list-view__price')]"  # Добавляем .//
             ]
         ),
 
@@ -103,10 +103,11 @@ class YandexMapsSelectors:
             css=".related-item-photo-view__description",
             xpath=".//div[contains(@class, 'related-item-photo-view__description')]",
             fallback_selectors=[
-                ".related-item-list-view__subtitle"  # Для list-типа
+                ".//div[contains(@class, 'related-item-list-view__subtitle')]"  # Добавляем .//
             ]
         ),
     }
+    
     # Отзывы
     REVIEWS = {
         "review_items": SelectorConfig(

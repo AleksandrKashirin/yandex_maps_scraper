@@ -336,7 +336,6 @@ class YandexMapsScraper:
             List: Список услуг
         """
         self.logger.info("Извлечение услуг")
-
         services = []
 
         # Загружаем дополнительные услуги если есть
@@ -354,18 +353,37 @@ class YandexMapsScraper:
         if not isinstance(service_elements, list):
             service_elements = [service_elements]
 
-        self.logger.info(f"Найдено {len(service_elements)} элементов услуг")  # Добавим лог
+        total_elements = len(service_elements)
+        self.logger.info(f"Найдено {total_elements} элементов услуг")
+
+        # Progress bar setup
+        progress_step = max(1, total_elements // 10)  # Обновляем каждые 10%
 
         for i, element in enumerate(service_elements, 1):
             try:
+                # Показываем прогресс
+                if i % progress_step == 0 or i == total_elements:
+                    percentage = (i / total_elements) * 100
+                    filled = int(percentage // 5)  # 20 символов = 100%
+                    bar = "█" * filled + "░" * (20 - filled)
+                    print(
+                        f"\r🔍 Обработка услуг: [{bar}] {percentage:.0f}% ({i}/{total_elements}) | Найдено: {len(services)}",
+                        end="",
+                        flush=True,
+                    )
+
                 service_data = {}
 
-                # Название услуги
+                # БЫСТРАЯ ПРОВЕРКА: есть ли название услуги вообще
                 name_element = self.navigator.find_element_with_fallback(
                     selectors.SERVICES["service_name"], element
                 )
-                if name_element:
-                    service_data["name"] = name_element.text.strip()
+                if not name_element:
+                    continue  # Пропускаем элементы без названия
+
+                service_data["name"] = name_element.text.strip()
+                if not service_data["name"]:
+                    continue  # Пропускаем пустые названия
 
                 # Цена
                 price_element = self.navigator.find_element_with_fallback(
@@ -375,7 +393,7 @@ class YandexMapsScraper:
                     price_text = price_element.text.strip()
                     service_data.update(self._parse_price(price_text))
 
-                # Описание (ищем без логирования, если не найдено - ничего страшного)
+                # Описание (опционально)
                 try:
                     desc_element = self.navigator.find_element_with_fallback(
                         selectors.SERVICES["service_description"], element
@@ -385,21 +403,19 @@ class YandexMapsScraper:
                         if desc_text:
                             service_data["description"] = desc_text
                 except:
-                    # Просто игнорируем если описания нет
                     pass
 
-                if service_data.get("name"):
-                    services.append(service_data)
-                    self.logger.debug(
-                        f"Услуга #{i}: {service_data.get('name')} - {service_data.get('price', 'Цена не указана')}"
-                    )
-                else:
-                    self.logger.debug(f"Элемент #{i}: название услуги не найдено")
+                services.append(service_data)
+                self.logger.debug(
+                    f"Услуга #{len(services)}: {service_data.get('name')} - {service_data.get('price', 'Цена не указана')}"
+                )
 
             except Exception as e:
-                self.logger.warning(f"Ошибка обработки услуги #{i}: {e}")
+                self.logger.debug(f"Пропускаем элемент #{i}: {e}")
                 continue
 
+        # Завершаем progress bar
+        print()  # Новая строка после progress bar
         self.logger.info(f"Извлечено {len(services)} услуг")
         return services
 
@@ -463,7 +479,11 @@ class YandexMapsScraper:
                     aria_label = rating_element.get_attribute("aria-label")
                     if aria_label:
                         # Извлекаем число из "Оценка X Из 5"
-                        rating_match = re.search(r"(?:Оценка|Rating) (\d+) (?:Из|Out of)", aria_label, re.IGNORECASE)
+                        rating_match = re.search(
+                            r"(?:Оценка|Rating) (\d+) (?:Из|Out of)",
+                            aria_label,
+                            re.IGNORECASE,
+                        )
                         if rating_match:
                             review_data["rating"] = int(rating_match.group(1))
 
@@ -499,10 +519,10 @@ class YandexMapsScraper:
     def _extract_owner_response(self, review_element) -> Optional[str]:
         """
         Извлечение ответа владельца на отзыв
-        
+
         Args:
             review_element: Элемент отзыва
-            
+
         Returns:
             Optional[str]: Текст ответа владельца или None
         """
@@ -511,40 +531,45 @@ class YandexMapsScraper:
             response_button = self.navigator.find_element_with_fallback(
                 selectors.REVIEWS["review_response_button"], review_element
             )
-            
+
             if not response_button:
                 return None
-                
+
             # Проверяем, что это действительно кнопка для показа ответа
             button_text = response_button.text.strip().lower()
-            if "посмотреть ответ" not in button_text and "показать ответ" not in button_text:
+            if (
+                "посмотреть ответ" not in button_text
+                and "показать ответ" not in button_text
+            ):
                 return None
-                
+
             # Кликаем по кнопке
             if self.navigator.safe_click(response_button):
                 # Небольшая пауза для загрузки ответа
                 time.sleep(1)
-                
+
                 # Ищем контент ответа в том же review_element или рядом с ним
                 # Сначала ищем в самом элементе отзыва
                 response_content = self.navigator.find_element_with_fallback(
                     selectors.REVIEWS["review_response_content"], review_element
                 )
-                
+
                 # Если не найден в элементе отзыва, ищем в родительском контейнере
                 if not response_content:
                     parent_element = review_element.find_element_by_xpath("./..")
                     response_content = self.navigator.find_element_with_fallback(
                         selectors.REVIEWS["review_response_content"], parent_element
                     )
-                
+
                 if response_content:
                     response_text = response_content.text.strip()
-                    self.logger.debug(f"Найден ответ организации: {response_text[:50]}...")
+                    self.logger.debug(
+                        f"Найден ответ организации: {response_text[:50]}..."
+                    )
                     return response_text
-                    
+
             return None
-        
+
         except Exception as e:
             self.logger.debug(f"Ошибка извлечения ответа организации: {e}")
             return None
@@ -593,7 +618,9 @@ class YandexMapsScraper:
 
         return result
 
-    def scrape_business(self, url: str, max_reviews: int = 50) -> Optional[BusinessData]:
+    def scrape_business(
+        self, url: str, max_reviews: int = 50
+    ) -> Optional[BusinessData]:
         """
         Полное извлечение данных о предприятии
 
@@ -636,7 +663,7 @@ class YandexMapsScraper:
             reviews_data = []
             if self.navigate_to_reviews_tab():
                 self.navigator.random_delay()
-                reviews_data = self.extract_reviews(max_reviews=max_reviews) 
+                reviews_data = self.extract_reviews(max_reviews=max_reviews)
 
             # Создаем объект данных
             business_data = BusinessData(
