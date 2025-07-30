@@ -25,7 +25,7 @@ class YandexMapsSelectors:
     # Базовая информация о предприятии
     BASIC_INFO = {
         "name": SelectorConfig(
-            css=".card-title-view__title-link",  # было: h1.card-title-view__title
+            css=".card-title-view__title-link",
             xpath="//a[contains(@class, 'card-title-view__title-link')]",
             fallback_selectors=[
                 ".orgpage-header-view__header",
