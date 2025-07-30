@@ -25,8 +25,8 @@ class YandexMapsSelectors:
     # Базовая информация о предприятии
     BASIC_INFO = {
         "name": SelectorConfig(
-            css="h1.card-title-view__title",
-            xpath="//h1[contains(@class, 'card-title-view__title')]",
+            css=".card-title-view__title-link",  # было: h1.card-title-view__title
+            xpath="//a[contains(@class, 'card-title-view__title-link')]",
             fallback_selectors=[
                 ".orgpage-header-view__header",
                 ".business-card-title-view__title",
@@ -58,7 +58,7 @@ class YandexMapsSelectors:
             ],
         ),
         "address": SelectorConfig(
-            css=".business-contacts-view__address",
+            css=".business-contacts-view__address-link",
             xpath="//div[contains(@class, 'business-contacts-view__address')]",
             fallback_selectors=[
                 ".business-card-title-view__address",
@@ -122,7 +122,7 @@ class YandexMapsSelectors:
     # Услуги и цены
     SERVICES = {
         "service_items": SelectorConfig(
-            css=".business-menu-view__item",
+            css=".business-full-items-grouped-view__item",
             xpath="//div[contains(@class, 'business-menu-view__item')]",
             multiple=True,
             fallback_selectors=[
@@ -132,12 +132,12 @@ class YandexMapsSelectors:
             ],
         ),
         "service_name": SelectorConfig(
-            css=".business-menu-view__item-name",
+            css=".related-item-list-view__title",
             xpath=".//div[contains(@class, 'business-menu-view__item-name')]",
             fallback_selectors=[".menu-item-view__name", ".service-name"],
         ),
         "service_price": SelectorConfig(
-            css=".business-menu-view__item-price",
+            css=".related-item-list-view__price",
             xpath=".//div[contains(@class, 'business-menu-view__item-price')]",
             fallback_selectors=[".menu-item-view__price", ".service-price", ".price"],
         ),

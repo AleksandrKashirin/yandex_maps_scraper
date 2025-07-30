@@ -39,7 +39,7 @@ class Settings:
         os.getenv("PAGE_LOAD_TIMEOUT", "30")
     )  # Таймаут загрузки страницы
     ELEMENT_WAIT_TIMEOUT: int = int(
-        os.getenv("ELEMENT_WAIT_TIMEOUT", "10")
+        os.getenv("ELEMENT_WAIT_TIMEOUT", "3")
     )  # Таймаут ожидания элемента
 
     # Retry настройки
@@ -53,7 +53,7 @@ class Settings:
     ROTATE_USER_AGENT: bool = os.getenv("ROTATE_USER_AGENT", "True").lower() == "true"
 
     # Настройки Chrome
-    HEADLESS: bool = os.getenv("HEADLESS", "False").lower() == "false"
+    HEADLESS: bool = os.getenv("HEADLESS", "False").lower() == "true"
     WINDOW_SIZE: str = os.getenv("WINDOW_SIZE", "1920,1080")
 
     # Настройки вывода
