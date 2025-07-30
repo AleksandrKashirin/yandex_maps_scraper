@@ -78,27 +78,35 @@ class YandexMapsSelectors:
     # Услуги и цены
     SERVICES = {
         "service_items": SelectorConfig(
-            css=".business-full-items-grouped-view__content",
-            xpath="//div[contains(@class, 'business-full-items-grouped-view__content')]",
+            css=".business-full-items-grouped-view__item",  # ИСПРАВЛЕНО
+            xpath="//div[contains(@class, 'business-full-items-grouped-view__item')]",
             multiple=True,
         ),
 
         "service_name": SelectorConfig(
             css=".related-item-photo-view__title",
             xpath=".//div[contains(@class, 'related-item-photo-view__title')]",
+            fallback_selectors=[
+                ".related-item-list-view__title"  # Для list-типа
+            ]
         ),
 
         "service_price": SelectorConfig(
             css=".related-product-view__price",
             xpath=".//span[contains(@class, 'related-product-view__price')]",
+            fallback_selectors=[
+                ".related-item-list-view__price"  # Для list-типа
+            ]
         ),
 
         "service_description": SelectorConfig(
             css=".related-item-photo-view__description",
             xpath=".//div[contains(@class, 'related-item-photo-view__description')]",
+            fallback_selectors=[
+                ".related-item-list-view__subtitle"  # Для list-типа
+            ]
         ),
     }
-
     # Отзывы
     REVIEWS = {
         "review_items": SelectorConfig(

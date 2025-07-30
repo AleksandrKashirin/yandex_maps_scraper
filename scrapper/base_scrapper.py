@@ -197,10 +197,6 @@ class YandexMapsScraper:
 
             self.logger.info("Страница успешно загружена")
 
-            # В конце метода load_page, перед return True добавьте:
-            print(f"[DEBUG] Заголовок страницы: {self.driver.title}")
-            print(f"[DEBUG] URL страницы: {self.driver.current_url}")
-
             return True
 
         except Exception as e:
@@ -358,7 +354,9 @@ class YandexMapsScraper:
         if not isinstance(service_elements, list):
             service_elements = [service_elements]
 
-        for element in service_elements:
+        self.logger.info(f"Найдено {len(service_elements)} элементов услуг")  # Добавим лог
+
+        for i, element in enumerate(service_elements, 1):
             try:
                 service_data = {}
 
@@ -377,21 +375,29 @@ class YandexMapsScraper:
                     price_text = price_element.text.strip()
                     service_data.update(self._parse_price(price_text))
 
-                # Описание
-                desc_element = self.navigator.find_element_with_fallback(
-                    selectors.SERVICES["service_description"], element
-                )
-                if desc_element:
-                    service_data["description"] = desc_element.text.strip()
+                # Описание (ищем без логирования, если не найдено - ничего страшного)
+                try:
+                    desc_element = self.navigator.find_element_with_fallback(
+                        selectors.SERVICES["service_description"], element
+                    )
+                    if desc_element:
+                        desc_text = desc_element.text.strip()
+                        if desc_text:
+                            service_data["description"] = desc_text
+                except:
+                    # Просто игнорируем если описания нет
+                    pass
 
                 if service_data.get("name"):
                     services.append(service_data)
                     self.logger.debug(
-                        f"Услуга: {service_data.get('name')} - {service_data.get('price', 'Цена не указана')}"
+                        f"Услуга #{i}: {service_data.get('name')} - {service_data.get('price', 'Цена не указана')}"
                     )
+                else:
+                    self.logger.debug(f"Элемент #{i}: название услуги не найдено")
 
             except Exception as e:
-                self.logger.warning(f"Ошибка обработки услуги: {e}")
+                self.logger.warning(f"Ошибка обработки услуги #{i}: {e}")
                 continue
 
         self.logger.info(f"Извлечено {len(services)} услуг")
@@ -455,13 +461,11 @@ class YandexMapsScraper:
                 )
                 if rating_element:
                     aria_label = rating_element.get_attribute("aria-label")
-                    print(f"[DEBUG] Found aria-label: {aria_label}")  # Отладка
                     if aria_label:
                         # Извлекаем число из "Оценка X Из 5"
                         rating_match = re.search(r"(?:Оценка|Rating) (\d+) (?:Из|Out of)", aria_label, re.IGNORECASE)
                         if rating_match:
                             review_data["rating"] = int(rating_match.group(1))
-                            print(f"[DEBUG] Extracted rating: {review_data['rating']}")  # Отладка
 
                 # Дата
                 date_element = self.navigator.find_element_with_fallback(

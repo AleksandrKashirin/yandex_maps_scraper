@@ -82,7 +82,7 @@ class YandexMapsNavigator:
             WebElement или None если элемент не найден
         """
 
-        self.logger.info(f"Поиск элемента с CSS: {config.css}, XPath: {config.xpath}")
+        # self.logger.info(f"Поиск элемента с CSS: {config.css}, XPath: {config.xpath}")
 
         search_context = parent_element if parent_element else self.driver
 
@@ -101,21 +101,21 @@ class YandexMapsNavigator:
                 else:
                     selectors_to_try.append(("css", selector))
 
+        # Убираем подробное логирование для ускорения
+        if len(selectors_to_try) <= 2:
+            self.logger.debug(f"Поиск элемента: {selectors_to_try}")
+        
         # Пробуем каждый селектор
         for selector_type, selector in selectors_to_try:
             try:
                 if config.multiple:
                     if selector_type == "css":
-                        elements = search_context.find_elements(
-                            By.CSS_SELECTOR, selector
-                        )
+                        elements = search_context.find_elements(By.CSS_SELECTOR, selector)
                     else:
                         elements = search_context.find_elements(By.XPATH, selector)
 
                     if elements:
-                        self.logger.debug(
-                            f"Найдено {len(elements)} элементов с селектором: {selector}"
-                        )
+                        self.logger.debug(f"Найдено {len(elements)} элементов с селектором: {selector}")
                         return elements
                 else:
                     if selector_type == "css":
@@ -132,7 +132,9 @@ class YandexMapsNavigator:
                 self.logger.warning(f"Ошибка при поиске с селектором {selector}: {e}")
                 continue
 
-        self.logger.warning("Элемент не найден ни с одним из селекторов")
+        # Только для важных элементов выводим warning
+        if config.css or config.xpath:
+            self.logger.debug("Элемент не найден ни с одним из селекторов")
         return None
 
     def wait_and_find_element(
