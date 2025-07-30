@@ -477,12 +477,10 @@ class YandexMapsScraper:
                 if text_element:
                     review_data["text"] = text_element.text.strip()
 
-                # Ответ владельца
-                response_element = self.navigator.find_element_with_fallback(
-                    selectors.REVIEWS["review_response"], element
-                )
-                if response_element:
-                    review_data["response"] = response_element.text.strip()
+                # Ответ владельца - новая логика
+                response_text = self._extract_owner_response(element)
+                if response_text:
+                    review_data["response"] = response_text
 
                 if review_data.get("author"):
                     reviews.append(review_data)
@@ -493,6 +491,59 @@ class YandexMapsScraper:
 
         self.logger.info(f"Извлечено {len(reviews)} отзывов")
         return reviews
+
+    def _extract_owner_response(self, review_element) -> Optional[str]:
+        """
+        Извлечение ответа владельца на отзыв
+        
+        Args:
+            review_element: Элемент отзыва
+            
+        Returns:
+            Optional[str]: Текст ответа владельца или None
+        """
+        try:
+            # Ищем кнопку "Посмотреть ответ организации"
+            response_button = self.navigator.find_element_with_fallback(
+                selectors.REVIEWS["review_response_button"], review_element
+            )
+            
+            if not response_button:
+                return None
+                
+            # Проверяем, что это действительно кнопка для показа ответа
+            button_text = response_button.text.strip().lower()
+            if "посмотреть ответ" not in button_text and "показать ответ" not in button_text:
+                return None
+                
+            # Кликаем по кнопке
+            if self.navigator.safe_click(response_button):
+                # Небольшая пауза для загрузки ответа
+                time.sleep(1)
+                
+                # Ищем контент ответа в том же review_element или рядом с ним
+                # Сначала ищем в самом элементе отзыва
+                response_content = self.navigator.find_element_with_fallback(
+                    selectors.REVIEWS["review_response_content"], review_element
+                )
+                
+                # Если не найден в элементе отзыва, ищем в родительском контейнере
+                if not response_content:
+                    parent_element = review_element.find_element_by_xpath("./..")
+                    response_content = self.navigator.find_element_with_fallback(
+                        selectors.REVIEWS["review_response_content"], parent_element
+                    )
+                
+                if response_content:
+                    response_text = response_content.text.strip()
+                    self.logger.debug(f"Найден ответ организации: {response_text[:50]}...")
+                    return response_text
+                    
+            return None
+        
+        except Exception as e:
+            self.logger.debug(f"Ошибка извлечения ответа организации: {e}")
+            return None
 
     def _parse_price(self, price_text: str) -> Dict[str, str]:
         """
@@ -538,7 +589,7 @@ class YandexMapsScraper:
 
         return result
 
-    def scrape_business(self, url: str) -> Optional[BusinessData]:
+    def scrape_business(self, url: str, max_reviews: int = 50) -> Optional[BusinessData]:
         """
         Полное извлечение данных о предприятии
 
@@ -581,7 +632,7 @@ class YandexMapsScraper:
             reviews_data = []
             if self.navigate_to_reviews_tab():
                 self.navigator.random_delay()
-                reviews_data = self.extract_reviews()
+                reviews_data = self.extract_reviews(max_reviews=max_reviews) 
 
             # Создаем объект данных
             business_data = BusinessData(

@@ -283,12 +283,12 @@ class YandexMapsNavigator:
             int: Количество загруженных элементов
         """
         loaded_count = 0
-        max_loads = 5  # Максимум 5 загрузок для предотвращения бесконечного цикла
-
+        max_loads = 5
+        
         selector_key = f"show_more_{content_type}"
-
+        
         if selector_key not in selectors.LOADING:
-            self.logger.warning(f"Селектор для загрузки {content_type} не найден")
+            self.logger.debug(f"Селектор для загрузки {content_type} не найден, пропускаем")
             return 0
 
         for i in range(max_loads):
@@ -297,9 +297,7 @@ class YandexMapsNavigator:
             )
 
             if not show_more_btn:
-                self.logger.debug(
-                    f"Кнопка 'Показать ещё' для {content_type} не найдена"
-                )
+                self.logger.debug(f"Кнопка 'Показать ещё' для {content_type} не найдена, завершаем загрузку")
                 break
 
             # Проверяем, что кнопка видна и активна

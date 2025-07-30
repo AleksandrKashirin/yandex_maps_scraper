@@ -131,7 +131,7 @@ class EnterpriseDataExtractor:
             
             # Извлечение данных
             with YandexMapsScraper(self.config) as scraper:
-                business_data = scraper.scrape_business(url)
+                business_data = scraper.scrape_business(url, max_reviews)
                 
                 if not business_data:
                     raise Exception("Не удалось извлечь данные предприятия")

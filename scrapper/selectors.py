@@ -124,9 +124,13 @@ class YandexMapsSelectors:
             xpath=".//div[contains(@class, 'business-review-view__body')]//span[contains(@class, 'spoiler-view__text-container')]",
             fallback_selectors=[".business-review-view__body"]
         ),
-        "review_response": SelectorConfig(
+        "review_response_button": SelectorConfig(
             css=".business-review-view__comment-expand",
             xpath=".//div[contains(@class, 'business-review-view__comment-expand')]",
+        ),
+        "review_response_content": SelectorConfig(
+            css=".business-review-comment-content__bubble",
+            xpath=".//div[contains(@class, 'business-review-comment-content__bubble')]",
         ),
     }
 
@@ -148,12 +152,6 @@ class YandexMapsSelectors:
 
     # Загрузка дополнительного контента
     LOADING = {
-        "show_more_services": SelectorConfig(
-            xpath="//button[contains(text(), 'Показать ещё') or contains(text(), 'Show more')]",
-        ),
-        "show_more_reviews": SelectorConfig(
-            xpath="//button[contains(text(), 'Ещё отзывы') or contains(text(), 'More reviews')]",
-        ),
         "loading_spinner": SelectorConfig(
             css=".loading, .spinner",
             xpath="//div[contains(@class, 'loading') or contains(@class, 'spinner')]",
