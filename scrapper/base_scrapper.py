@@ -626,12 +626,10 @@ class YandexMapsScraper:
         self.logger.info(f"Быстрое извлечение отзывов{'(без ограничений)' if max_reviews == -1 else f'(макс. {max_reviews})'}")
         
         reviews = []
-        
-        # 1. Переходим на вкладку отзывов через Selenium
-        if not self.navigate_to_reviews_tab():
-            self.logger.warning("Не удалось перейти на вкладку отзывов")
-            return reviews
-        
+
+        print("Проверяем URL:", self.driver.current_url)
+        print("Заголовок страницы:", self.driver.title)
+
         # Небольшая пауза для загрузки
         time.sleep(3)
         
@@ -644,8 +642,27 @@ class YandexMapsScraper:
         soup = BeautifulSoup(page_html, 'html.parser')
         
         # 4. Извлекаем количество отзывов из заголовка
-        reviews_header = soup.find('h2', class_='card-section-header__title')
+        print("Ищем заголовок отзывов...")
+        all_headers = soup.find_all('h2', class_='card-section-header__title')
+        print(f"Найдено заголовков: {len(all_headers)}")
+
+        for i, header in enumerate(all_headers):
+            header_text = header.get_text(strip=True)
+            print(f"Заголовок {i+1}: {header_text}")
+            
+            # Ищем тот, который содержит "отзыв"
+            if 'отзыв' in header_text.lower():
+                reviews_count_match = re.search(r'(\d+)\s*отзыв', header_text)
+                if reviews_count_match:
+                    actual_reviews_count = int(reviews_count_match.group(1))
+                    self.logger.info(f"Количество отзывов на странице: {actual_reviews_count}")
+                    self._actual_reviews_count = actual_reviews_count
+                    break
+
+        reviews_header = soup.find('h2', class_='card-section-header__title _wide')
+        print(f"Найден заголовок: {reviews_header}")
         if reviews_header:
+            print(f"Текст заголовка: {reviews_header.get_text(strip=True)}")
             header_text = reviews_header.get_text(strip=True)
             reviews_count_match = re.search(r'(\d+)\s*отзыв', header_text)
             if reviews_count_match:
