@@ -402,3 +402,59 @@ class YandexMapsNavigator:
                 continue
 
         return False
+
+    def scroll_to_load_reviews(self, max_reviews: int = 100, target_count: int = None) -> int:
+        """
+        Прокрутка страницы для загрузки всех отзывов
+        
+        Args:
+            max_reviews: Максимальное количество отзывов для загрузки
+            
+        Returns:
+            int: Количество загруженных отзывов
+        """
+        self.logger.info(f"Начинаем прокрутку для загрузки отзывов (макс. {max_reviews}, цель: {target_count})")
+        
+        previous_count = 0
+        attempts_without_change = 0
+        
+        for scroll_attempt in range(30):
+            current_reviews = self.driver.find_elements(By.CSS_SELECTOR, ".business-review-view__info")
+            current_count = len(current_reviews)
+            
+            print(f"Прокрутка #{scroll_attempt + 1}: найдено {current_count} отзывов")
+            
+            # ДОБАВЛЯЕМ: Останавливаемся, если достигли известного количества
+            if target_count and current_count >= target_count:
+                self.logger.info(f"Достигнуто целевое количество отзывов: {current_count}")
+                break
+                
+            if current_count >= max_reviews:
+                break
+                
+            # Уменьшаем попытки без изменений с 3 до 1
+            if current_count == previous_count:
+                attempts_without_change += 1
+                if attempts_without_change >= 1:  # Было 3
+                    break
+            else:
+                attempts_without_change = 0
+                
+            previous_count = current_count
+            
+            # ИЗМЕНЯЕМ: Прокручиваем к последнему отзыву + вниз
+            if current_reviews:
+                last_review = current_reviews[-1]
+                self.driver.execute_script("arguments[0].scrollIntoView();", last_review)
+                time.sleep(2)
+                # Дополнительная прокрутка вниз
+                self.driver.execute_script("window.scrollBy(0, 1000);")
+            else:
+                self.driver.execute_script("window.scrollBy(0, 1000);")
+            
+            # Увеличиваем паузу
+            time.sleep(random.uniform(3, 5))
+        
+        final_count = len(self.driver.find_elements(By.CSS_SELECTOR, ".business-review-view__info"))
+        self.logger.info(f"Прокрутка завершена. Загружено {final_count} отзывов")
+        return final_count

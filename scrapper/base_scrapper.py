@@ -627,62 +627,53 @@ class YandexMapsScraper:
         
         reviews = []
 
-        print("Проверяем URL:", self.driver.current_url)
-        print("Заголовок страницы:", self.driver.title)
-
         # Небольшая пауза для загрузки
         time.sleep(3)
-        
-        # 2. Получаем HTML страницы
-        self.logger.info("Получение HTML страницы с отзывами...")
-        page_html = self.driver.page_source
-        
-        # 3. Парсим через BeautifulSoup
-        from bs4 import BeautifulSoup
-        soup = BeautifulSoup(page_html, 'html.parser')
-        
-        # 4. Извлекаем количество отзывов из заголовка
-        print("Ищем заголовок отзывов...")
-        all_headers = soup.find_all('h2', class_='card-section-header__title')
-        print(f"Найдено заголовков: {len(all_headers)}")
 
-        for i, header in enumerate(all_headers):
+        # 1. СНАЧАЛА получаем HTML для поиска количества отзывов
+        initial_html = self.driver.page_source
+        soup = BeautifulSoup(initial_html, 'html.parser')
+        
+        # 2. Определяем целевое количество отзывов из заголовка
+        target_reviews_count = None
+        all_headers = soup.find_all('h2', class_='card-section-header__title')
+        
+        for header in all_headers:
             header_text = header.get_text(strip=True)
-            print(f"Заголовок {i+1}: {header_text}")
-            
-            # Ищем тот, который содержит "отзыв"
             if 'отзыв' in header_text.lower():
                 reviews_count_match = re.search(r'(\d+)\s*отзыв', header_text)
                 if reviews_count_match:
-                    actual_reviews_count = int(reviews_count_match.group(1))
-                    self.logger.info(f"Количество отзывов на странице: {actual_reviews_count}")
-                    self._actual_reviews_count = actual_reviews_count
+                    target_reviews_count = int(reviews_count_match.group(1))
+                    self.logger.info(f"Целевое количество отзывов: {target_reviews_count}")
+                    self._actual_reviews_count = target_reviews_count
                     break
-
-        reviews_header = soup.find('h2', class_='card-section-header__title _wide')
-        print(f"Найден заголовок: {reviews_header}")
-        if reviews_header:
-            print(f"Текст заголовка: {reviews_header.get_text(strip=True)}")
-            header_text = reviews_header.get_text(strip=True)
-            reviews_count_match = re.search(r'(\d+)\s*отзыв', header_text)
-            if reviews_count_match:
-                actual_reviews_count = int(reviews_count_match.group(1))
-                self.logger.info(f"Количество отзывов на странице: {actual_reviews_count}")
-                self._actual_reviews_count = actual_reviews_count
         
-        # 5. Находим все отзывы - БОЛЕЕ ТОЧНЫЙ СЕЛЕКТОР
+        # 3. ТЕПЕРЬ прокручиваем с известной целью
+        if target_reviews_count:
+            loaded_reviews_count = self.navigator.scroll_to_load_reviews(
+                min(max_reviews, target_reviews_count), 
+                target_reviews_count
+            )
+        else:
+            loaded_reviews_count = self.navigator.scroll_to_load_reviews(max_reviews)
+        
+        # 4. Получаем обновленный HTML после прокрутки
+        self.logger.info("Получение обновленного HTML после прокрутки...")
+        page_html = self.driver.page_source
+        soup = BeautifulSoup(page_html, 'html.parser')
+        
+        # 5. Парсим все загруженные отзывы
         review_elements = soup.find_all('div', class_='business-review-view__info')
         
         if not review_elements:
             self.logger.warning("Отзывы не найдены в HTML")
             return reviews
         
-        # Ограничиваем количество отзывов только если задано ограничение
+        # Ограничиваем количество если нужно
         if max_reviews > 0:
             review_elements = review_elements[:max_reviews]
         
         total_reviews = len(review_elements)
-        
         self.logger.info(f"Найдено {total_reviews} отзывов в HTML")
         
         # 5. Progress bar для отзывов
