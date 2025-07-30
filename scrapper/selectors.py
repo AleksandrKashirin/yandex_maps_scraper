@@ -51,7 +51,7 @@ class YandexMapsSelectors:
         ),
         "reviews_count": SelectorConfig(
             css=".business-header-rating-view__text",
-            xpath="//span[contains(@class, 'business-header-rating-view__text')]",
+            xpath="//div[contains(@class, 'business-header-rating-view__text')]",
             fallback_selectors=[
                 ".business-summary-rating-badge-view__text",
                 ".rating-badge-view__text",
@@ -59,7 +59,7 @@ class YandexMapsSelectors:
         ),
         "address": SelectorConfig(
             css=".business-contacts-view__address-link",
-            xpath="//div[contains(@class, 'business-contacts-view__address')]",
+            xpath="//div[contains(@class, 'business-contacts-view__address-link')]",
             fallback_selectors=[
                 ".business-card-title-view__address",
                 ".orgpage-header-view__address",
@@ -67,7 +67,7 @@ class YandexMapsSelectors:
         ),
         "phone": SelectorConfig(
             css=".card-phones-view__phone-number",
-            xpath="//span[contains(@class, 'card-phones-view__phone-number')]",
+            xpath="//div[contains(@class, 'card-phones-view__phone-number')]",
             multiple=True,
             fallback_selectors=[
                 ".business-contacts-view__phone",
@@ -123,7 +123,7 @@ class YandexMapsSelectors:
     SERVICES = {
         "service_items": SelectorConfig(
             css=".business-full-items-grouped-view__item",
-            xpath="//div[contains(@class, 'business-menu-view__item')]",
+            xpath="//div[contains(@class, 'business-full-items-grouped-view__item')]",
             multiple=True,
             fallback_selectors=[
                 ".menu-item-view",
@@ -133,12 +133,12 @@ class YandexMapsSelectors:
         ),
         "service_name": SelectorConfig(
             css=".related-item-list-view__title",
-            xpath=".//div[contains(@class, 'business-menu-view__item-name')]",
+            xpath=".//div[contains(@class, 'related-item-list-view__title')]",
             fallback_selectors=[".menu-item-view__name", ".service-name"],
         ),
         "service_price": SelectorConfig(
             css=".related-item-list-view__price",
-            xpath=".//div[contains(@class, 'business-menu-view__item-price')]",
+            xpath=".//div[contains(@class, 'related-item-list-view__price')]",
             fallback_selectors=[".menu-item-view__price", ".service-price", ".price"],
         ),
         "service_description": SelectorConfig(
