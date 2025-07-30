@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlparse
 
+from bs4 import BeautifulSoup
 from pydantic import BaseModel, Field, ValidationError
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, WebDriverException
@@ -328,97 +329,6 @@ class YandexMapsScraper:
         """
         return self.navigator.navigate_to_services_tab()
 
-    def extract_services(self) -> List[Dict[str, Any]]:
-        """
-        Извлечение услуг и цен
-
-        Returns:
-            List: Список услуг
-        """
-        self.logger.info("Извлечение услуг")
-        services = []
-
-        # Загружаем дополнительные услуги если есть
-        self.navigator.load_more_content("services")
-
-        # Находим все элементы услуг
-        service_elements = self.navigator.find_element_with_fallback(
-            selectors.SERVICES["service_items"]
-        )
-
-        if not service_elements:
-            self.logger.warning("Услуги не найдены")
-            return services
-
-        if not isinstance(service_elements, list):
-            service_elements = [service_elements]
-
-        total_elements = len(service_elements)
-        self.logger.info(f"Найдено {total_elements} элементов услуг")
-
-        # Progress bar setup
-        progress_step = max(1, total_elements // 10)  # Обновляем каждые 10%
-
-        for i, element in enumerate(service_elements, 1):
-            try:
-                # Показываем прогресс
-                if i % progress_step == 0 or i == total_elements:
-                    percentage = (i / total_elements) * 100
-                    filled = int(percentage // 5)  # 20 символов = 100%
-                    bar = "█" * filled + "░" * (20 - filled)
-                    print(
-                        f"\r🔍 Обработка услуг: [{bar}] {percentage:.0f}% ({i}/{total_elements}) | Найдено: {len(services)}",
-                        end="",
-                        flush=True,
-                    )
-
-                service_data = {}
-
-                # БЫСТРАЯ ПРОВЕРКА: есть ли название услуги вообще
-                name_element = self.navigator.find_element_with_fallback(
-                    selectors.SERVICES["service_name"], element
-                )
-                if not name_element:
-                    continue  # Пропускаем элементы без названия
-
-                service_data["name"] = name_element.text.strip()
-                if not service_data["name"]:
-                    continue  # Пропускаем пустые названия
-
-                # Цена
-                price_element = self.navigator.find_element_with_fallback(
-                    selectors.SERVICES["service_price"], element
-                )
-                if price_element:
-                    price_text = price_element.text.strip()
-                    service_data.update(self._parse_price(price_text))
-
-                # Описание (опционально)
-                try:
-                    desc_element = self.navigator.find_element_with_fallback(
-                        selectors.SERVICES["service_description"], element
-                    )
-                    if desc_element:
-                        desc_text = desc_element.text.strip()
-                        if desc_text:
-                            service_data["description"] = desc_text
-                except:
-                    pass
-
-                services.append(service_data)
-                self.logger.debug(
-                    f"Услуга #{len(services)}: {service_data.get('name')} - {service_data.get('price', 'Цена не указана')}"
-                )
-
-            except Exception as e:
-                self.logger.debug(f"Пропускаем элемент #{i}: {e}")
-                continue
-
-        # Завершаем progress bar
-        print()  # Новая строка после progress bar
-        self.logger.info(f"Извлечено {len(services)} услуг")
-        return services
-
     def navigate_to_reviews_tab(self) -> bool:
         """
         Переход на вкладку отзывов
@@ -712,3 +622,115 @@ class YandexMapsScraper:
 
             self.logger.error(f"Ошибка скрапинга: {e}")
             return None
+
+    def extract_services(self) -> List[Dict[str, Any]]:
+        """
+        Быстрое извлечение услуг через BeautifulSoup после навигации Selenium
+
+        Returns:
+            List: Список услуг
+        """
+        self.logger.info("Быстрое извлечение услуг (гибридный подход)")
+
+        services = []
+
+        # 1. Используем Selenium для навигации
+        if not self.navigate_to_services_tab():
+            self.logger.warning("Не удалось перейти на вкладку услуг")
+            return services
+
+        # Небольшая пауза для полной загрузки контента
+        time.sleep(3)
+
+        # 2. Получаем HTML страницы
+        self.logger.info("Получение HTML страницы...")
+        page_html = self.driver.page_source
+
+        soup = BeautifulSoup(page_html, "html.parser")
+
+        # 4. Находим все элементы услуг
+        service_elements = soup.find_all(
+            "div", class_="business-full-items-grouped-view__item"
+        )
+
+        if not service_elements:
+            self.logger.warning("Услуги не найдены в HTML")
+            return services
+
+        total_elements = len(service_elements)
+        self.logger.info(f"Найдено {total_elements} элементов услуг в HTML")
+
+        # 5. Progress bar для обработки
+        progress_step = max(1, total_elements // 20)  # Обновляем каждые 5%
+
+        for i, element in enumerate(service_elements, 1):
+            try:
+                # Progress bar
+                if i % progress_step == 0 or i == total_elements:
+                    percentage = (i / total_elements) * 100
+                    filled = int(percentage // 5)
+                    bar = "█" * filled + "░" * (20 - filled)
+                    print(
+                        f"\r⚡ Быстрая обработка: [{bar}] {percentage:.0f}% ({i}/{total_elements}) | Найдено: {len(services)}",
+                        end="",
+                        flush=True,
+                    )
+
+                service_data = {}
+
+                # Ищем название (grid тип)
+                name_elem = element.find("div", class_="related-item-photo-view__title")
+                # Fallback для list типа
+                if not name_elem:
+                    name_elem = element.find(
+                        "div", class_="related-item-list-view__title"
+                    )
+
+                if not name_elem:
+                    continue
+
+                service_name = name_elem.get_text(strip=True)
+                if not service_name:
+                    continue
+
+                service_data["name"] = service_name
+
+                # Ищем цену (grid тип)
+                price_elem = element.find("span", class_="related-product-view__price")
+                # Fallback для list типа
+                if not price_elem:
+                    price_elem = element.find(
+                        "div", class_="related-item-list-view__price"
+                    )
+
+                if price_elem:
+                    price_text = price_elem.get_text(strip=True)
+                    service_data.update(self._parse_price(price_text))
+
+                # Ищем описание (опционально)
+                desc_elem = element.find(
+                    "div", class_="related-item-photo-view__description"
+                )
+                # Fallback для list типа
+                if not desc_elem:
+                    desc_elem = element.find(
+                        "div", class_="related-item-list-view__subtitle"
+                    )
+
+                if desc_elem:
+                    desc_text = desc_elem.get_text(strip=True)
+                    if desc_text:
+                        service_data["description"] = desc_text
+
+                services.append(service_data)
+
+            except Exception as e:
+                self.logger.debug(f"Ошибка обработки услуги #{i}: {e}")
+                continue
+
+        # Завершаем progress bar
+        print()
+        self.logger.info(
+            f"⚡ Быстро извлечено {len(services)} услуг за {time.time() - time.time():.1f}s"
+        )
+        return services
