@@ -27,69 +27,35 @@ class YandexMapsSelectors:
         "name": SelectorConfig(
             css=".card-title-view__title-link",
             xpath="//a[contains(@class, 'card-title-view__title-link')]",
-            fallback_selectors=[
-                ".orgpage-header-view__header",
-                ".business-card-title-view__title",
-                "[data-test-id='business-name']",
-            ],
         ),
         "category": SelectorConfig(
-            css=".business-categories-view__category",
-            xpath="//div[contains(@class, 'business-categories-view__category')]",
-            fallback_selectors=[
-                ".business-card-title-view__categories",
-                ".orgpage-header-view__category",
-            ],
+            css=".business-categories-view__category _outline _clickable",
+            xpath="//a[contains(@class, 'business-categories-view__category _outline _clickable')]",
         ),
         "rating": SelectorConfig(
             css=".business-rating-badge-view__rating-text",
             xpath="//span[contains(@class, 'business-rating-badge-view__rating-text')]",
-            fallback_selectors=[
-                ".business-summary-rating-badge-view__rating",
-                "[data-test-id='rating-badge']",
-            ],
         ),
         "reviews_count": SelectorConfig(
-            css=".business-header-rating-view__text",
-            xpath="//div[contains(@class, 'business-header-rating-view__text')]",
-            fallback_selectors=[
-                ".business-summary-rating-badge-view__text",
-                ".rating-badge-view__text",
-            ],
+            css=".business-header-rating-view__text _clickable",
+            xpath="//div[contains(@class, 'business-header-rating-view__text _clickable')]",
         ),
         "address": SelectorConfig(
             css=".business-contacts-view__address-link",
             xpath="//div[contains(@class, 'business-contacts-view__address-link')]",
-            fallback_selectors=[
-                ".business-card-title-view__address",
-                ".orgpage-header-view__address",
-            ],
         ),
         "phone": SelectorConfig(
             css=".card-phones-view__phone-number",
             xpath="//div[contains(@class, 'card-phones-view__phone-number')]",
-            multiple=True,
-            fallback_selectors=[
-                ".business-contacts-view__phone",
-                "[data-test-id='phone-number']",
-            ],
         ),
         "website": SelectorConfig(
-            css="a[href*='http']:not([href*='yandex']):not([href*='maps'])",
-            xpath="//a[contains(@href, 'http') and not(contains(@href, 'yandex')) and not(contains(@href, 'maps'))]",
+            css=".business-urls-view__link",
+            xpath="//a[contains(@class, 'business-urls-view__link')]",
             attribute="href",
-            fallback_selectors=[
-                ".business-urls-view__url",
-                ".business-contacts-view__website",
-            ],
         ),
         "working_hours": SelectorConfig(
             css=".business-working-status-view",
             xpath="//div[contains(@class, 'business-working-status-view')]",
-            fallback_selectors=[
-                ".business-summary-working-status-view",
-                ".working-status-view",
-            ],
         ),
     }
 
@@ -97,93 +63,65 @@ class YandexMapsSelectors:
     NAVIGATION = {
         "services_tab": SelectorConfig(
             xpath="//div[contains(@aria-label, 'Products and services') or contains(text(), 'Услуги') or contains(text(), 'Products')]",
-            fallback_selectors=[
-                "//button[contains(text(), 'Услуги')]",
-                "//a[contains(@href, 'services')]",
-                "//div[contains(@class, 'tabs') and contains(text(), 'Услуги')]",
-            ],
         ),
         "reviews_tab": SelectorConfig(
             xpath="//a[contains(@href, 'reviews') or contains(text(), 'Отзывы') or contains(text(), 'Reviews')]",
-            fallback_selectors=[
-                "//button[contains(text(), 'Отзывы')]",
-                "//div[contains(@class, 'tabs') and contains(text(), 'Отзывы')]",
-            ],
         ),
         "overview_tab": SelectorConfig(
             xpath="//div[contains(@aria-label, 'Overview') or contains(text(), 'Обзор')]",
-            fallback_selectors=[
-                "//button[contains(text(), 'Обзор')]",
-                "//a[contains(@href, 'overview')]",
-            ],
         ),
     }
 
     # Услуги и цены
     SERVICES = {
         "service_items": SelectorConfig(
-            css=".business-full-items-grouped-view__item",
-            xpath="//div[contains(@class, 'business-full-items-grouped-view__item')]",
+            css=".business-full-items-grouped-view__content",
+            xpath="//div[contains(@class, 'business-full-items-grouped-view__content')]",
             multiple=True,
-            fallback_selectors=[
-                ".menu-item-view",
-                ".service-item",
-                "[data-test-id='service-item']",
-            ],
         ),
+
         "service_name": SelectorConfig(
-            css=".related-item-list-view__title",
-            xpath=".//div[contains(@class, 'related-item-list-view__title')]",
-            fallback_selectors=[".menu-item-view__name", ".service-name"],
+            css=".related-item-photo-view__title",
+            xpath=".//div[contains(@class, 'related-item-photo-view__title')]",
         ),
+
         "service_price": SelectorConfig(
-            css=".related-item-list-view__price",
-            xpath=".//div[contains(@class, 'related-item-list-view__price')]",
-            fallback_selectors=[".menu-item-view__price", ".service-price", ".price"],
+            css=".related-product-view__price",
+            xpath=".//span[contains(@class, 'related-product-view__price')]",
         ),
+
         "service_description": SelectorConfig(
-            css=".business-menu-view__item-description",
-            xpath=".//div[contains(@class, 'business-menu-view__item-description')]",
-            fallback_selectors=[".menu-item-view__description", ".service-description"],
+            css=".related-item-photo-view__description",
+            xpath=".//div[contains(@class, 'related-item-photo-view__description')]",
         ),
     }
 
     # Отзывы
     REVIEWS = {
         "review_items": SelectorConfig(
-            css=".business-reviews-card-view__review",
-            xpath="//div[contains(@class, 'business-reviews-card-view__review')]",
+            css=".business-reviews-card-view__reviews-container",
+            xpath="//div[contains(@class, 'business-reviews-card-view__reviews-container')]",
             multiple=True,
-            fallback_selectors=[
-                ".review-item",
-                ".reviews-view__item",
-                "[data-test-id='review-item']",
-            ],
         ),
         "review_author": SelectorConfig(
             css=".business-review-view__author",
             xpath=".//span[contains(@class, 'business-review-view__author')]",
-            fallback_selectors=[".review-author", ".author-name"],
         ),
         "review_rating": SelectorConfig(
             css=".business-review-view__rating",
             xpath=".//span[contains(@class, 'business-review-view__rating')]",
-            fallback_selectors=[".review-rating", ".rating-stars"],
         ),
         "review_date": SelectorConfig(
             css=".business-review-view__date",
             xpath=".//span[contains(@class, 'business-review-view__date')]",
-            fallback_selectors=[".review-date", ".date"],
         ),
         "review_text": SelectorConfig(
             css=".business-review-view__body",
             xpath=".//div[contains(@class, 'business-review-view__body')]",
-            fallback_selectors=[".review-text", ".review-body"],
         ),
         "review_response": SelectorConfig(
             css=".business-review-view__response",
             xpath=".//div[contains(@class, 'business-review-view__response')]",
-            fallback_selectors=[".review-response", ".owner-response"],
         ),
     }
 
@@ -210,17 +148,9 @@ class YandexMapsSelectors:
     LOADING = {
         "show_more_services": SelectorConfig(
             xpath="//button[contains(text(), 'Показать ещё') or contains(text(), 'Show more')]",
-            fallback_selectors=[
-                "//button[contains(@class, 'show-more')]",
-                "//a[contains(text(), 'Все услуги')]",
-            ],
         ),
         "show_more_reviews": SelectorConfig(
             xpath="//button[contains(text(), 'Ещё отзывы') or contains(text(), 'More reviews')]",
-            fallback_selectors=[
-                "//button[contains(@class, 'reviews-show-more')]",
-                "//a[contains(text(), 'Все отзывы')]",
-            ],
         ),
         "loading_spinner": SelectorConfig(
             css=".loading, .spinner",

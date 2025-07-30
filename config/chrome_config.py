@@ -138,7 +138,7 @@ class ChromeConfig:
                 "durable_storage": 2,
             },
             "profile.managed_default_content_settings": {
-                "images": 2,  # Блокируем изображения для скорости
+                "images": 1,  # 1 - Разрешить картинки, 2 - Запретить
             },
             "profile.default_content_settings": {"popups": 0},
             "managed.default_content_settings": {"popups": 0},
@@ -179,8 +179,10 @@ class ChromeConfig:
         else:
             # Автоматическая загрузка и установка ChromeDriver
             driver_path = ChromeDriverManager().install()
-            if driver_path.endswith('THIRD_PARTY_NOTICES.chromedriver'):
-                driver_path = driver_path.replace('THIRD_PARTY_NOTICES.chromedriver', 'chromedriver.exe')
+            if driver_path.endswith("THIRD_PARTY_NOTICES.chromedriver"):
+                driver_path = driver_path.replace(
+                    "THIRD_PARTY_NOTICES.chromedriver", "chromedriver.exe"
+                )
             service = Service(driver_path)
 
         # Настройки сервиса для стабильности
