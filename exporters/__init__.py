@@ -350,7 +350,6 @@ class DatabaseExporter(BaseExporter):
                     date TEXT,
                     text TEXT,
                     response TEXT,
-                    helpful_count INTEGER,
                     FOREIGN KEY (enterprise_id) REFERENCES enterprises (id)
                 )
             """
@@ -502,7 +501,7 @@ class DatabaseExporter(BaseExporter):
             cursor.execute(
                 """
                 INSERT INTO reviews 
-                (enterprise_id, author, rating, date, text, response, helpful_count)
+                (enterprise_id, author, rating, date, text, response)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
                 (
@@ -511,8 +510,7 @@ class DatabaseExporter(BaseExporter):
                     review.get("rating"),
                     review.get("date"),
                     review.get("text"),
-                    review.get("response"),
-                    review.get("helpful_count"),
+                    review.get("response")
                 ),
             )
 

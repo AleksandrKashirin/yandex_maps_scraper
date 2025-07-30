@@ -167,7 +167,7 @@ def main():
         "--no-services", action="store_true", help="Не извлекать услуги"
     )
     parser.add_argument("--no-reviews", action="store_true", help="Не извлекать отзывы")
-    parser.add_argument("--max-reviews", type=int, default=50, help="Максимум отзывов")
+    parser.add_argument("--max-reviews", type=int, default=10, help="Максимум отзывов")
 
     # Утилиты
     parser.add_argument(

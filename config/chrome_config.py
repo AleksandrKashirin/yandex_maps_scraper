@@ -102,6 +102,10 @@ class ChromeConfig:
         ]
         base_args.extend(performance_args)
 
+        # Добавление русского языка
+        lang_args = ["--lang=ru", "--accept-lang=ru-RU,ru,en"]
+        base_args.extend(lang_args)
+
         # Headless режим
         if settings.HEADLESS:
             base_args.append("--headless=new")
@@ -119,6 +123,7 @@ class ChromeConfig:
 
         # Расширенные настройки приватности и безопасности
         prefs = {
+            "intl.accept_languages": "ru,ru-RU,en",
             "profile.default_content_setting_values": {
                 "notifications": 2,
                 "media_stream": 2,

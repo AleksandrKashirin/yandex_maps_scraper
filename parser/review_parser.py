@@ -152,8 +152,7 @@ class ReviewParser(BaseParser):
             "rating": None,
             "date": None,
             "text": None,
-            "response": None,
-            "helpful_count": None,
+            "response": None
         }
 
         confidence = 0.3  # Базовая уверенность
@@ -182,12 +181,6 @@ class ReviewParser(BaseParser):
             review_data["text"] = text_info.get("review_text")
             review_data["response"] = text_info.get("owner_response")
             confidence += 0.2
-
-        # Извлекаем количество "полезно"
-        helpful_info = self._extract_helpful_count(review_text)
-        if helpful_info:
-            review_data["helpful_count"] = helpful_info
-            confidence += 0.1
 
         # Проверяем минимальные требования
         if not review_data["author"]:
@@ -408,28 +401,6 @@ class ReviewParser(BaseParser):
                 owner_response if owner_response and len(owner_response) > 10 else None
             ),
         }
-
-    def _extract_helpful_count(self, text: str) -> Optional[int]:
-        """Извлечение количества отметок 'полезно'"""
-
-        helpful_patterns = [
-            r"(\d+)\s*(?:полезн|helpful|like)",
-            r"(?:полезн|helpful|like).*?(\d+)",
-            r"👍\s*(\d+)",
-            r"(\d+)\s*👍",
-        ]
-
-        for pattern in helpful_patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                try:
-                    count = int(match.group(1))
-                    if 0 <= count <= 10000:  # Разумный диапазон
-                        return count
-                except (ValueError, IndexError):
-                    continue
-
-        return None
 
     def analyze_sentiment(self, review_text: str) -> Dict[str, any]:
         """Базовый анализ тональности отзыва"""

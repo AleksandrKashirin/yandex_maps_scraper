@@ -50,7 +50,6 @@ def create_sample_enterprise() -> Enterprise:
             ),
         ],
         social_networks=SocialNetworks(
-            instagram="https://instagram.com/example_salon",
             whatsapp="https://wa.me/79991234567",
         ),
         working_hours=WorkingHours(

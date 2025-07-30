@@ -47,17 +47,7 @@ class ContactParser(BaseParser):
             r"(?:https?://)?(?:vk\.com|m\.vk\.com)/([a-zA-Z0-9_.]+)",
             r"vk\s*[:@]\s*([a-zA-Z0-9_.]+)",
             r"вконтакте\s*[:@]\s*([a-zA-Z0-9_.]+)",
-        ],
-        "instagram": [
-            r"(?:https?://)?(?:www\.)?(?:instagram\.com|instagr\.am)/([a-zA-Z0-9_.]+)",
-            r"instagram\s*[:@]\s*([a-zA-Z0-9_.]+)",
-            r"инстаграм\s*[:@]\s*([a-zA-Z0-9_.]+)",
-        ],
-        "facebook": [
-            r"(?:https?://)?(?:www\.)?(?:facebook\.com|fb\.com|m\.facebook\.com)/([a-zA-Z0-9_.]+)",
-            r"facebook\s*[:@]\s*([a-zA-Z0-9_.]+)",
-            r"фейсбук\s*[:@]\s*([a-zA-Z0-9_.]+)",
-        ],
+        ]
     }
 
     # Индикаторы email
@@ -327,14 +317,6 @@ class ContactParser(BaseParser):
                 username = match.group(1)
                 return f"https://vk.com/{username}"
 
-            elif network == "instagram":
-                username = match.group(1)
-                return f"https://instagram.com/{username}"
-
-            elif network == "facebook":
-                username = match.group(1)
-                return f"https://facebook.com/{username}"
-
         except (IndexError, AttributeError):
             pass
 
@@ -438,9 +420,7 @@ class ContactParser(BaseParser):
             domain_patterns = {
                 "telegram": ["t.me", "telegram.me", "telegram.org"],
                 "whatsapp": ["wa.me", "api.whatsapp.com"],
-                "vk": ["vk.com", "m.vk.com"],
-                "instagram": ["instagram.com", "instagr.am"],
-                "facebook": ["facebook.com", "fb.com", "m.facebook.com"],
+                "vk": ["vk.com", "m.vk.com"]
             }
 
             if network in domain_patterns:

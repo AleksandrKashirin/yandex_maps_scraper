@@ -21,9 +21,6 @@ class Review(BaseModel):
     response: Optional[str] = Field(
         None, max_length=3000, description="Ответ владельца"
     )
-    helpful_count: Optional[int] = Field(
-        None, ge=0, description="Количество отметок 'полезно'"
-    )
 
     @field_validator("author")
     @classmethod
@@ -163,25 +160,6 @@ class Review(BaseModel):
 
         return v
 
-    @field_validator("helpful_count")
-    @classmethod
-    def validate_helpful_count(cls, v: Optional[int]) -> Optional[int]:
-        """Валидация количества отметок 'полезно'"""
-        if v is None:
-            return None
-
-        if not isinstance(v, int):
-            try:
-                v = int(v)
-            except (ValueError, TypeError):
-                return None
-
-        # Не может быть отрицательным
-        if v < 0:
-            return 0
-
-        return v
-
     def get_rating_stars(self) -> str:
         """Получить рейтинг в виде звездочек"""
         if self.rating is None:
@@ -252,6 +230,5 @@ class Review(BaseModel):
                 "date": "15 января 2024",
                 "text": "Отличный сервис! Мастера профессиональные, результат превзошел ожидания.",
                 "response": "Спасибо за отзыв! Рады, что остались довольны.",
-                "helpful_count": 3,
             }
         }

@@ -62,13 +62,16 @@ class YandexMapsSelectors:
     # Навигационные элементы (вкладки)
     NAVIGATION = {
         "services_tab": SelectorConfig(
-            xpath="//div[contains(@aria-label, 'Products and services') or contains(text(), 'Услуги') or contains(text(), 'Products')]",
+            css=".tabs-select-view__title._name_prices",
+            xpath="//div[contains(@class, 'tabs-select-view__title') and contains(@class, '_name_prices')]",
         ),
         "reviews_tab": SelectorConfig(
-            xpath="//a[contains(@href, 'reviews') or contains(text(), 'Отзывы') or contains(text(), 'Reviews')]",
+            css=".tabs-select-view__title._name_reviews", 
+            xpath="//div[contains(@class, 'tabs-select-view__title') and contains(@class, '_name_reviews')]",
         ),
         "overview_tab": SelectorConfig(
-            xpath="//div[contains(@aria-label, 'Overview') or contains(text(), 'Обзор')]",
+            css=".tabs-select-view__title._name_overview",
+            xpath="//div[contains(@class, 'tabs-select-view__title') and contains(@class, '_name_overview')]",
         ),
     }
 
@@ -99,48 +102,47 @@ class YandexMapsSelectors:
     # Отзывы
     REVIEWS = {
         "review_items": SelectorConfig(
-            css=".business-reviews-card-view__reviews-container",
-            xpath="//div[contains(@class, 'business-reviews-card-view__reviews-container')]",
+            css=".business-review-view__info",
+            xpath="//div[contains(@class, 'business-review-view__info')]",
             multiple=True,
         ),
         "review_author": SelectorConfig(
-            css=".business-review-view__author",
-            xpath=".//span[contains(@class, 'business-review-view__author')]",
+            css="span[itemprop='name']",
+            xpath=".//span[@itemprop='name']",
         ),
         "review_rating": SelectorConfig(
-            css=".business-review-view__rating",
-            xpath=".//span[contains(@class, 'business-review-view__rating')]",
+            css=".business-review-view__rating .business-rating-badge-view__stars",
+            xpath=".//div[contains(@class, 'business-review-view__rating')]//div[contains(@class, 'business-rating-badge-view__stars')]",
+            attribute="aria-label",
         ),
         "review_date": SelectorConfig(
-            css=".business-review-view__date",
-            xpath=".//span[contains(@class, 'business-review-view__date')]",
+            css=".business-review-view__date span",
+            xpath=".//div[contains(@class, 'business-review-view__date')]//span",
         ),
         "review_text": SelectorConfig(
-            css=".business-review-view__body",
-            xpath=".//div[contains(@class, 'business-review-view__body')]",
+            css=".business-review-view__body .spoiler-view__text-container",
+            xpath=".//div[contains(@class, 'business-review-view__body')]//span[contains(@class, 'spoiler-view__text-container')]",
+            fallback_selectors=[".business-review-view__body"]
         ),
         "review_response": SelectorConfig(
-            css=".business-review-view__response",
-            xpath=".//div[contains(@class, 'business-review-view__response')]",
+            css=".business-review-view__comment-expand",
+            xpath=".//div[contains(@class, 'business-review-view__comment-expand')]",
         ),
     }
 
     # Социальные сети
     SOCIAL_NETWORKS = {
         "telegram": SelectorConfig(
-            xpath="//a[contains(@href, 't.me') or contains(@href, 'telegram')]",
+            xpath="//a[contains(@href, 't.me') or contains(@href, 'telegram') or contains(@aria-label, 'telegram')]",
             attribute="href",
         ),
         "whatsapp": SelectorConfig(
-            xpath="//a[contains(@href, 'wa.me') or contains(@href, 'whatsapp')]",
+            xpath="//a[contains(@href, 'wa.me') or contains(@href, 'whatsapp') or contains(@aria-label, 'whatsapp')]",
             attribute="href",
         ),
-        "vk": SelectorConfig(xpath="//a[contains(@href, 'vk.com')]", attribute="href"),
-        "instagram": SelectorConfig(
-            xpath="//a[contains(@href, 'instagram.com')]", attribute="href"
-        ),
-        "facebook": SelectorConfig(
-            xpath="//a[contains(@href, 'facebook.com')]", attribute="href"
+        "vk": SelectorConfig(
+            xpath="//a[contains(@href, 'vk.com') or contains(@aria-label, 'vkontakte')]",
+            attribute="href",
         ),
     }
 

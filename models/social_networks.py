@@ -15,8 +15,6 @@ class SocialNetworks(BaseModel):
     telegram: Optional[str] = Field(None, description="Ссылка на Telegram")
     whatsapp: Optional[str] = Field(None, description="Ссылка на WhatsApp")
     vk: Optional[str] = Field(None, description="Ссылка на ВКонтакте")
-    instagram: Optional[str] = Field(None, description="Ссылка на Instagram")
-    facebook: Optional[str] = Field(None, description="Ссылка на Facebook")
 
     @field_validator("telegram")
     @classmethod
@@ -111,58 +109,6 @@ class SocialNetworks(BaseModel):
 
         return v
 
-    @field_validator("instagram")
-    @classmethod
-    def validate_instagram(cls, v: Optional[str]) -> Optional[str]:
-        """Валидация ссылки на Instagram"""
-        if not v:
-            return None
-
-        v = v.strip()
-        if not v:
-            return None
-
-        # Валидные форматы Instagram
-        valid_patterns = [
-            r"^https?://(?:www\.)?instagram\.com/[\w.]+",
-            r"^https?://(?:www\.)?instagr\.am/[\w.]+",
-            r"^@[\w.]+$",  # Простое имя пользователя
-        ]
-
-        # Если это простое имя пользователя, конвертируем
-        if v.startswith("@"):
-            return f"https://instagram.com/{v[1:]}"
-
-        # Если это простое имя без @, дополняем
-        if not v.startswith("http") and not "/" in v:
-            return f"https://instagram.com/{v}"
-
-        return v
-
-    @field_validator("facebook")
-    @classmethod
-    def validate_facebook(cls, v: Optional[str]) -> Optional[str]:
-        """Валидация ссылки на Facebook"""
-        if not v:
-            return None
-
-        v = v.strip()
-        if not v:
-            return None
-
-        # Валидные форматы Facebook
-        valid_patterns = [
-            r"^https?://(?:www\.)?facebook\.com/[\w.]+",
-            r"^https?://(?:www\.)?fb\.com/[\w.]+",
-            r"^https?://m\.facebook\.com/[\w.]+",
-        ]
-
-        # Если это простое имя пользователя, дополняем
-        if not v.startswith("http") and not "/" in v:
-            return f"https://facebook.com/{v}"
-
-        return v
-
     def get_active_networks(self) -> Dict[str, str]:
         """Получить словарь активных социальных сетей"""
         networks = {}
@@ -190,9 +136,6 @@ class SocialNetworks(BaseModel):
                 elif network == "whatsapp":
                     # wa.me/phone или номер телефона
                     usernames[network] = path if path else None
-                elif network in ["vk", "instagram", "facebook"]:
-                    # domain.com/username
-                    usernames[network] = path.split("/")[0] if path else None
                 else:
                     usernames[network] = path
 
@@ -217,6 +160,5 @@ class SocialNetworks(BaseModel):
                 "telegram": "https://t.me/username",
                 "whatsapp": "https://wa.me/79991234567",
                 "vk": "https://vk.com/username",
-                "instagram": "https://instagram.com/username",
             }
         }

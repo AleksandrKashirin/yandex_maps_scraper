@@ -404,8 +404,7 @@ class EnterpriseDataExtractor:
         if business_data.social_networks and (
             business_data.social_networks.telegram or 
             business_data.social_networks.whatsapp or 
-            business_data.social_networks.vk or 
-            business_data.social_networks.instagram
+            business_data.social_networks.vk
         ):
             filled_fields += 1
         if business_data.working_hours and (
@@ -427,8 +426,7 @@ class EnterpriseDataExtractor:
                 business_data.social_networks and any([
                     business_data.social_networks.telegram,
                     business_data.social_networks.whatsapp,
-                    business_data.social_networks.vk,
-                    business_data.social_networks.instagram
+                    business_data.social_networks.vk
                 ])
             ),
             'services_count': len(business_data.services),

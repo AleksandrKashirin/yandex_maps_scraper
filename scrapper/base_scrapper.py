@@ -39,8 +39,6 @@ class SocialNetworks(BaseModel):
     telegram: Optional[str] = None
     whatsapp: Optional[str] = None
     vk: Optional[str] = None
-    instagram: Optional[str] = None
-    facebook: Optional[str] = None
 
 
 class WorkingHours(BaseModel):
@@ -59,7 +57,6 @@ class ReviewData(BaseModel):
     date: Optional[str] = None
     text: Optional[str] = None
     response: Optional[str] = None
-    helpful_count: Optional[int] = None
 
 
 class BusinessData(BaseModel):
@@ -457,10 +454,14 @@ class YandexMapsScraper:
                     selectors.REVIEWS["review_rating"], element
                 )
                 if rating_element:
-                    rating_text = rating_element.text.strip()
-                    rating_match = re.search(r"(\d+)", rating_text)
-                    if rating_match:
-                        review_data["rating"] = int(rating_match.group(1))
+                    aria_label = rating_element.get_attribute("aria-label")
+                    print(f"[DEBUG] Found aria-label: {aria_label}")  # Отладка
+                    if aria_label:
+                        # Извлекаем число из "Оценка X Из 5"
+                        rating_match = re.search(r"(?:Оценка|Rating) (\d+) (?:Из|Out of)", aria_label, re.IGNORECASE)
+                        if rating_match:
+                            review_data["rating"] = int(rating_match.group(1))
+                            print(f"[DEBUG] Extracted rating: {review_data['rating']}")  # Отладка
 
                 # Дата
                 date_element = self.navigator.find_element_with_fallback(
