@@ -72,7 +72,8 @@ class BusinessData(BaseModel):
     phone: Optional[str] = None
     working_hours: WorkingHours = Field(default_factory=WorkingHours)
     rating: Optional[float] = None
-    reviews_count: Optional[int] = None
+    ratings_count: Optional[int] = None  # Добавляем - количество оценок (102)
+    reviews_count: Optional[int] = None  # Оставляем - количество отзывов (89)
     reviews: List[ReviewData] = Field(default_factory=list)
     scraping_date: datetime = Field(default_factory=datetime.now)
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -370,6 +371,9 @@ class YandexMapsScraper:
             if self.navigate_to_reviews_tab():
                 self.navigator.random_delay()
                 reviews_data = self.extract_reviews(max_reviews=max_reviews)
+            
+            # Получаем фактическое количество отзывов
+            actual_reviews_count = getattr(self, '_actual_reviews_count', None)
 
             # Создаем объект данных
             business_data = BusinessData(
@@ -382,7 +386,8 @@ class YandexMapsScraper:
                 phone=basic_data.get("phone"),
                 working_hours=WorkingHours(**basic_data.get("working_hours", {})),
                 rating=basic_data.get("rating"),
-                reviews_count=basic_data.get("reviews_count"),
+                ratings_count=basic_data.get("ratings_count"),  # 102
+                reviews_count=actual_reviews_count,  # 89
                 reviews=[ReviewData(**review) for review in reviews_data],
                 metadata={
                     "source_url": url,
@@ -573,14 +578,14 @@ class YandexMapsScraper:
                 data["rating"] = float(rating_match.group(1).replace(",", "."))
                 self.logger.debug(f"Рейтинг: {data['rating']}")
 
-        # Количество отзывов
+        # Количество оценок (было reviews_count)
         reviews_elem = soup.find("div", class_="business-header-rating-view__text")
         if reviews_elem:
             reviews_text = reviews_elem.get_text(strip=True)
             reviews_match = re.search(r"(\d+)", reviews_text)
             if reviews_match:
-                data["reviews_count"] = int(reviews_match.group(1))
-                self.logger.debug(f"Количество отзывов: {data['reviews_count']}")
+                data["ratings_count"] = int(reviews_match.group(1))  # Изменено
+                self.logger.debug(f"Количество оценок: {data['ratings_count']}")
 
         # Адрес
         address_elem = soup.find("div", class_="business-contacts-view__address-link")
@@ -638,7 +643,17 @@ class YandexMapsScraper:
         from bs4 import BeautifulSoup
         soup = BeautifulSoup(page_html, 'html.parser')
         
-        # 4. Находим все отзывы - БОЛЕЕ ТОЧНЫЙ СЕЛЕКТОР
+        # 4. Извлекаем количество отзывов из заголовка
+        reviews_header = soup.find('h2', class_='card-section-header__title')
+        if reviews_header:
+            header_text = reviews_header.get_text(strip=True)
+            reviews_count_match = re.search(r'(\d+)\s*отзыв', header_text)
+            if reviews_count_match:
+                actual_reviews_count = int(reviews_count_match.group(1))
+                self.logger.info(f"Количество отзывов на странице: {actual_reviews_count}")
+                self._actual_reviews_count = actual_reviews_count
+        
+        # 5. Находим все отзывы - БОЛЕЕ ТОЧНЫЙ СЕЛЕКТОР
         review_elements = soup.find_all('div', class_='business-review-view__info')
         
         if not review_elements:
@@ -681,7 +696,7 @@ class YandexMapsScraper:
                         review_data["rating"] = int(rating_match.group(1))
                 
                 # Дата - ИСПРАВЛЕННАЯ ВЕРСИЯ
-                date_elem = element.find('div', class_='business-review-view__date')
+                date_elem = element.find('span', class_='business-review-view__date')
                 if date_elem:
                     # Ищем span с текстом даты
                     date_span = date_elem.find('span')
