@@ -1,0 +1,140 @@
+# Виртуальные окружения
+/venv
+/env
+/ENV
+/venv*/
+.venv/
+.ENV/
+.env/
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.Python
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Логи и временные файлы
+*.log
+*.log.*
+logs/
+.logs/
+*.tmp
+*.temp
+.cache/
+
+# Базы данных
+*.db
+*.sqlite
+*.sqlite3
+
+# Экспортированные данные
+data/
+/data
+*.json
+*.csv
+exports/
+output/
+results/
+
+# Selenium и WebDriver
+chromedriver*
+geckodriver*
+*.exe
+selenium-debug.log
+ghost.log
+
+# Chrome временные файлы и профили
+chrome_temp/
+chrome_profiles/
+user_data_dir/
+.chrome/
+
+# Переменные окружения
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+
+# IDE и редакторы
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-*
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Профилирование
+.prof
+
+# Система
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Документация
+docs/_build/
+.readthedocs.yml
+
+# Временные файлы скрапинга
+screenshots/
+temp_files/
+*.html.backup
+*.tmp.html
+
+# Метаданные и конфигурация
+*.meta.json
+config.local.py
+local_settings.py
+
+# Архивы
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# Локальные настройки разработки
+local/
+.local/
